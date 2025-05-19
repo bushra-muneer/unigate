@@ -12,7 +12,7 @@ burndown_python := burndown_venv + python
 frontend_venv := "frontend" / venv
 frontend_python := frontend_venv + python
 
-@_default:
+@_default: docker-up
     just --list
 
 docker-up:
@@ -25,9 +25,9 @@ docker-down:
     docker compose down -v
 
 reset-database:
-    docker compose exec postgres-unigate psql -U $POSTGRES_USER -d $POSTGRES_DB -c "DO \$\$ BEGIN EXECUTE 'DROP SCHEMA public CASCADE'; EXECUTE 'CREATE SCHEMA public'; END \$\$;"
-    docker compose exec postgres-unigate psql -U $POSTGRES_USER -d $UNIGATE_DB -c "DO \$\$ BEGIN EXECUTE 'DROP SCHEMA public CASCADE'; EXECUTE 'CREATE SCHEMA public'; END \$\$;"
-    docker compose exec postgres-unigate psql -U $POSTGRES_USER -d $AUTH_DB -c "DO \$\$ BEGIN EXECUTE 'DROP SCHEMA public CASCADE'; EXECUTE 'CREATE SCHEMA public'; END \$\$;"
+    docker compose exec postgres-unigate psql -U ${POSTGRES_USER} -d ${POSTGRES_DB} -c "DO \$\$ BEGIN EXECUTE 'DROP SCHEMA public CASCADE'; EXECUTE 'CREATE SCHEMA public'; END \$\$;"
+    docker compose exec postgres-unigate psql -U ${POSTGRES_USER} -d ${UNIGATE_DB} -c "DO \$\$ BEGIN EXECUTE 'DROP SCHEMA public CASCADE'; EXECUTE 'CREATE SCHEMA public'; END \$\$;"
+    docker compose exec postgres-unigate psql -U ${POSTGRES_USER} -d ${AUTH_DB} -c "DO \$\$ BEGIN EXECUTE 'DROP SCHEMA public CASCADE'; EXECUTE 'CREATE SCHEMA public'; END \$\$;"
 
 init-database-docker-real: reset-database
     docker compose exec backend-unigate sh -c "cd alembic_unigate && alembic upgrade head"
@@ -38,7 +38,6 @@ init-database-docker-base: reset-database
     docker compose exec backend-unigate sh -c "cd alembic_unigate && alembic upgrade head"
     docker compose exec backend-unigate sh -c "cd alembic_auth && alembic upgrade head"
     docker compose exec backend-unigate sh -c "python3 seeders/base.py"
-
 
 init-database: reset-database
     cd backend/alembic_unigate && ../../{{ backend_venv }}/alembic upgrade head

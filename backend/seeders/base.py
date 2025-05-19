@@ -13,6 +13,7 @@ from unigate.schemas.auth import AuthUserCreate
 from unigate.schemas.course import CourseCreate
 from unigate.schemas.group import GroupCreate
 from unigate.schemas.student import StudentCreate
+from sqlmodel import select
 
 students = [
     StudentCreate(
@@ -94,6 +95,13 @@ professors = [
         surname="Dell'Amico",
         hashed_password=get_password_hash("testpassword"),
     ),
+     AuthUserCreate(
+        number=4000000,
+        email="s6180175@studenti.unige.it",
+        name="Bushra",
+        surname="Muneer",
+        hashed_password=get_password_hash("testpassword"),
+    ),
 ]
 
 groups = [
@@ -120,17 +128,17 @@ groups = [
 courses = {
     "Test Course": {
         "course": CourseCreate(name="Test Course"),
-        "professors": [professors[0]],
+        "professors": [professors[0],professors[3],professors[4]],
         "exam_dates": [datetime(2025, 1, 1, tzinfo=pytz.utc)],
     },
     "Capstone": {
         "course": CourseCreate(name="Capstone"),
-        "professors": [professors[1], professors[2]],
+        "professors": [professors[1], professors[2],professors[4]],
         "exam_dates": [],
     },
     "Distributed Systems": {
         "course": CourseCreate(name="Distributed Systems"),
-        "professors": [professors[1], professors[3]],
+        "professors": [professors[1], professors[3], professors[4]],
         "exam_dates": [],
     },
 }
@@ -184,6 +192,7 @@ def seed_auth() -> None:
                             course_id=created_courses[course_name].id,
                         )
                     )
+
     session.commit()
 
 
