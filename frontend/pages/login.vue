@@ -204,14 +204,10 @@ export default {
         // Store username in eventBus for navigation
         eventBus.setUsername(form.value.username);
 
-        // const targetPath = form.value.username.startsWith("P")
-        //   ? "/dashboard"
-        //   : "/groups";
         const targetPath = form.value.username.startsWith("P")
-          ? { name: 'ProfessorHome', query: { tab: 'dashboard' } }
-          : { name: 'ProfessorHome', query: { tab: 'groups' } };
-
-
+          ? "/dashboard"
+          : "/groups";
+       
         await router.push(targetPath).catch((err) => {
           throw new Error(`Failed to navigate to ${targetPath}`);
         });
