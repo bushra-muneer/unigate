@@ -52,6 +52,12 @@ const router = createRouter({
       path: "/:pathMatch(.*)*",
       redirect: "/404",
     },
+    {
+  path: '/professor/home',
+  name: 'ProfessorHome',
+  component: () => import('@/pages/ProfessorHome.vue'), 
+}
+
   ],
 });
 
