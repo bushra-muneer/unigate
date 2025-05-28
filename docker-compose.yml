@@ -23,7 +23,7 @@ services:
       retries: 5
       start_period: 10s
     ports:
-      - "5432:5432"      # <-- ADD THIS
+      - "5434:5432"      # <-- ADD THIS
     restart: unless-stopped
 
   pgadmin-unigate:
@@ -44,8 +44,8 @@ services:
     ports:
     - "5050:80"
     depends_on:
-      postgres-unigate:
-        condition: service_healthy
+      - postgres-unigate
+
         
     restart: unless-stopped
 
@@ -82,15 +82,11 @@ services:
       mc anonymous set download minio/${MINIO_BUCKET} || true;
       tail -f /dev/null;"
     environment:
-      - MINIO_URL$=${MINIO_URL?Variable not set}
+      - MINIO_URL=${MINIO_URL?Variable not set}
       - MINIO_BUCKET=${MINIO_BUCKET?Variable not set}
       - MINIO_ROOT_USER=${MINIO_ROOT_USER?Variable not set}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD?Variable not set}
-    depends_on:
-      minio-unigate:
-        condition: service_healthy
-        restart: true
-        required: true
+    
     restart: unless-stopped
 
   backend-unigate:
@@ -98,10 +94,6 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    develop:
-      watch:
-        - path: ./backend/pyproject.toml
-          action: rebuild
     env_file:
       - .env
     environment:
@@ -121,11 +113,6 @@ services:
       - ./backend/alembic_unigate:/app/alembic_unigate
       - ./backend/alembic_auth:/app/alembic_auth
       - ./backend/seeders:/app/seeders
-    depends_on:
-      postgres-unigate:
-        condition: service_healthy
-        restart: true
-        required: true
     ports:
       - "8000:8000"      # <-- ADD THIS
     restart: unless-stopped
@@ -143,8 +130,7 @@ services:
     ports:
       - "3000:3000"    # Expose Nuxt3 server
     depends_on:
-      backend-unigate:
-        condition: service_started
+      - backend-unigate
     restart: unless-stopped
 
 
