@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from "vue";
+import CourseCard from "@/components/CourseCard.vue";
 import CourseSearchBox from "@/components/CourseSearchBox.vue";
 import ExamDateDropdown from "@/components/ExamDateDropdown.vue";
-import CourseCard from "@/components/CourseCard.vue";
+import GroupCreationChart from "@/components/GroupCreationChart.vue";
 import LoadingIndicator from "@/components/LoadingIndicator.vue";
 import { useGroups } from "@/composables/useGroups";
-import GroupCreationChart from "@/components/GroupCreationChart.vue";
+import { computed, onMounted, ref, watch } from "vue";
 
 const {
   getProfessorsCourses,

@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from 'vue';
+import CourseCard from '@/components/CourseCard.vue';
 import CourseSearchBox from '@/components/CourseSearchBox.vue';
 import ExamDateDropdown from '@/components/ExamDateDropdown.vue';
-import CourseCard from '@/components/CourseCard.vue';
-import LoadingIndicator from '@/components/LoadingIndicator.vue';
 import GroupCreationChart from '@/components/GroupCreationChart.vue';
+import LoadingIndicator from '@/components/LoadingIndicator.vue';
 import { useGroups } from '@/composables/useGroups';
+import { computed, onMounted, ref, watch } from 'vue';
 
 const {
   getProfessorsCourses,
@@ -49,7 +49,7 @@ const fetchProfessorsCourses = async () => {
     }));
     await fetchGroupCounts();
     await fetchAverageMembers();
-    await fetchNumberOfActiveGroups();
+    // await fetchNumberOfActiveGroups();
   } catch (error: any) {
     console.error('Error fetching courses:', error);
     errorMessage.value = error.response?.status === 403
@@ -82,24 +82,24 @@ const fetchAverageMembers = async () => {
   }
 };
 
-const fetchNumberOfActiveGroups = async () => {
-  for (const course of courses.value) {
-    activeGroupsCounts.value[course.name] = {};
-    for (const exam of course.exams) {
-      try {
-        const response = await getActiveGroupCount(course.name, exam.date);
-        activeGroupsCounts.value[course.name][exam.date] = response.groups.filter(
-          (g: any) => g.students.length > 1
-        ).length;
-        if (course.name === course.value && exam.date === examDate.value) {
-          studentNames.value = response.student_names;
-        }
-      } catch {
-        activeGroupsCounts.value[course.name][exam.date] = 0;
-      }
-    }
-  }
-};
+// const fetchNumberOfActiveGroups = async () => {
+//   for (const course of courses.value) {
+//     activeGroupsCounts.value[course.name] = {};
+//     for (const exam of course.exams) {
+//       try {
+//         const response = await getActiveGroupCount(course.name, exam.date);
+//         activeGroupsCounts.value[course.name][exam.date] = response.groups.filter(
+//           (g: any) => g.students.length > 1
+//         ).length;
+//         if (course.name === course.value && exam.date === examDate.value) {
+//           studentNames.value = response.student_names;
+//         }
+//       } catch {
+//         activeGroupsCounts.value[course.name][exam.date] = 0;
+//       }
+//     }
+//   }
+// };
 
 const fetchGroupCreationData = async (courseName: string) => {
   try {
