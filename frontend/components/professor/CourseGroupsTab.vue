@@ -2,108 +2,135 @@
   <div class="p-8 relative">
     <h2 class="text-2xl font-semibold mb-4">Course Groups</h2>
 
-    <!-- Left Arrow -->
-    <button
-      class="absolute left-0 top-[50%] -translate-y-1/2 z-10 bg-white shadow p-2 rounded-full"
-      @click="scrollLeft"
-    >
-      <span class="text-lg">&lt;</span>
-    </button>
+    <div v-for="course in coursesWithGroups" :key="course.courseId" class="mb-6 border rounded-lg p-4">
+      <div @click="toggleCourse(course.courseId)" class="cursor-pointer font-bold">
+        {{ isCourseExpanded(course.courseId) ? '▼' : '▶' }} {{ course.courseName }} ({{ course.groups.length }} Groups)
+      </div>
 
-    <!-- Right Arrow -->
-    <button
-      class="absolute right-0 top-[50%] -translate-y-1/2 z-10 bg-white shadow p-2 rounded-full"
-      @click="scrollRight"
-    >
-      <span class="text-lg">&gt;</span>
-    </button>
+      <div v-show="isCourseExpanded(course.courseId)" class="pl-4 mt-2">
+        <div
+          v-for="(typeGroups, type) in groupByType(course.groups)"
+          :key="type"
+          class="mb-3"
+        >
+          <div @click="toggleStatus(course.courseId, type)" class="cursor-pointer font-semibold">
+            {{ isStatusExpanded(course.courseId, type) ? '▼' : '▶' }} {{ type }} ({{ typeGroups.length }} Groups)
+          </div>
 
-    <!-- Carousel -->
-    <div
-      ref="carousel"
-      class="overflow-x-auto scrollbar-hide scroll-smooth"
-    >
-      <div class="flex space-x-4 min-w-max">
-        <GroupCard
-          v-for="group in allGroups"
-          :key="group.id"
-          :group="group"
-          class="min-w-[250px] max-w-[250px] flex-shrink-0"
-        />
+          <div v-show="isStatusExpanded(course.courseId, type)" class="pl-4 mt-1">
+            <div
+              v-for="(dateGroups, date) in groupByDate(typeGroups)"
+              :key="date"
+              class="mb-2"
+            >
+              <div @click="toggleStatus(type, date)" class="cursor-pointer text-sm text-gray-600 mb-1">
+                {{ isStatusExpanded(type, date) ? '▼' : '▶' }} Exam Date: {{ formatDate(date) }} ({{ dateGroups.length }} Groups)
+              </div>
+              <div v-show="isStatusExpanded(type, date)" class="flex space-x-4 overflow-x-auto">
+              
+                <GroupCard
+                  v-for="group in dateGroups"
+                  :key="group.id"
+                  :group="group"
+                  class="min-w-[250px] max-w-[250px] flex-shrink-0"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
+
+  
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
+import { format } from 'date-fns';
 import GroupCard from './GroupCardComp.vue';
+import { useGroups } from '@/composables/useGroups';
 
 const carousel = ref<HTMLDivElement | null>(null);
+const coursesWithGroups = ref([]);
+const expandedCourses = ref<string[]>([]);
+const expandedStatuses = ref<Record<string, string[]>>({});
+
+const { getCoursesWithGroups } = useGroups();
+
+onMounted(async () => {
+  try {
+    const res = await getCoursesWithGroups();
+    coursesWithGroups.value = res;
+  } catch (error) {
+    console.error('Failed to fetch courses with groups:', error);
+  }
+});
 
 function scrollLeft() {
   carousel.value?.scrollBy({ left: -300, behavior: 'smooth' });
 }
-
 function scrollRight() {
   carousel.value?.scrollBy({ left: 300, behavior: 'smooth' });
 }
 
-const allGroups = [
-  {
-    id: '1',
-    name: 'Design Sprint Team',
-    description: 'Collaborative UX and product design team.',
-    memberCount: 5,
-    date: '14/02/2025',
-  },
-  {
-    id: '2',
-    name: 'Frontend Ninjas',
-    description: 'React and UI/UX team.',
-    memberCount: 9,
-    date: '16/02/2025',
-  },
-  {
-    id: '3',
-    name: 'AI Enthusiasts Group',
-    description: 'Focusing on ML, AI, and Data Science projects.',
-    memberCount: 8,
-    date: '13/02/2025',
-  },
-  {
-    id: '4',
-    name: 'Brand Strategy Crew',
-    description: 'Designers working on branding initiatives.',
-    memberCount: 7,
-    date: '15/02/2025',
-  },
-  {
-    id: '5',
-    name: 'Design Pioneers',
-    description: 'UX researchers and interaction designers.',
-    memberCount: 6,
-    date: '17/02/2025',
-  },
-   {
-    id: '6',
-    name: 'Design Pioneers',
-    description: 'UX researchers and interaction designers.',
-    memberCount: 6,
-    date: '17/02/2025',
-  },
-   {
-    id: '7',
-    name: 'Design Pioneers',
-    description: 'UX researchers and interaction designers.',
-    memberCount: 6,
-    date: '17/02/2025',
-  },
-];
+function groupByType(groups: any[]) {
+  const map: Record<string, any[]> = {};
+  for (const g of groups) {
+    const key = g.type || 'Unknown';
+    if (!map[key]) map[key] = [];
+    map[key].push(g);
+  }
+  return map;
+}
+
+function groupByDate(groups: any[]) {
+  const map: Record<string, any[]> = {};
+  for (const g of groups) {
+    const key = g.examDate || 'No Date';
+    if (!map[key]) map[key] = [];
+    map[key].push(g);
+  }
+  return map;
+}
+
+function formatDate(dateStr: string) {
+  try {
+    return format(new Date(dateStr), 'dd/MM/yyyy');
+  } catch {
+    return dateStr;
+  }
+}
+
+function toggleCourse(courseId: string) {
+  const index = expandedCourses.value.indexOf(courseId);
+  if (index >= 0) {
+    expandedCourses.value.splice(index, 1);
+  } else {
+    expandedCourses.value.push(courseId);
+  }
+}
+
+function isCourseExpanded(courseId: string) {
+  return expandedCourses.value.includes(courseId);
+}
+
+function toggleStatus(parentId: string, childKey: string) {
+  if (!expandedStatuses.value[parentId]) expandedStatuses.value[parentId] = [];
+  const index = expandedStatuses.value[parentId].indexOf(childKey);
+  if (index >= 0) {
+    expandedStatuses.value[parentId].splice(index, 1);
+  } else {
+    expandedStatuses.value[parentId].push(childKey);
+  }
+}
+
+function isStatusExpanded(parentId: string, childKey: string) {
+  return expandedStatuses.value[parentId]?.includes(childKey);
+}
 </script>
 
 <style>
-/* Optional: Hide scrollbar on all browsers */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
