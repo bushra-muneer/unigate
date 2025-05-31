@@ -343,6 +343,24 @@ export function useGroups() {
     }
   }
 
+  // Function to fetch professor's courses with group details
+async function getCoursesWithGroups() {
+  try {
+    isError.value = false;
+    isLoading.value = true;
+    const response = await useApiFetch("/professors/courses-with-groups", {
+  method: "GET",
+});
+    return response;
+  } catch (error) {
+    isError.value = true;
+    throw error;
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+
   async function getYearlyStats(courseName: string) {
     try {
       isError.value = false;
@@ -384,6 +402,7 @@ export function useGroups() {
     getAverageMembers,
     getActiveGroupCount,
     getGroupCreationDistribution,
-    getYearlyStats,
+    getYearlyStats, 
+    getCoursesWithGroups,
   };
 }
