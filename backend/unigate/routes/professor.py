@@ -1,16 +1,12 @@
 from fastapi import APIRouter
+from sqlmodel import Session, select
 
-from unigate.routes.deps import CurrProfessorDep
-from unigate.schemas.course import CourseReadWithUsersAndExams
-from sqlmodel import select
 from unigate.core.database import SessionDep
-from unigate.models import Course, Group,  Student
-
-from sqlmodel import Session
-from unigate.routes.deps import SessionDep
-from unigate.crud import group as group_crud  
-
-
+from unigate.crud import group as group_crud
+from unigate.crud.group import get_group_status
+from unigate.models import Course, Group, Student
+from unigate.routes.deps import CurrProfessorDep, SessionDep
+from unigate.schemas.course import CourseReadWithUsersAndExams
 
 router = APIRouter()
 
@@ -55,6 +51,7 @@ def get_courses_with_groups(
                 "examDate": g.exam_date,
                 "courseName": course.name,
                 "tags": g.tags,
+                "status": get_group_status(g.exam_date),
             }
             for g in course_groups
         ]

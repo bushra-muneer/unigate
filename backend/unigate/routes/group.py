@@ -27,8 +27,9 @@ router = APIRouter()
     "",
     response_model=list[GroupReadWithStudents],
 )
-def get_groups(session: SessionDep) -> list[Group]:
-    return crud.group.get_all(session=session)
+def get_groups(session: SessionDep) -> list[GroupReadWithStudents]:
+    groups = crud.group.get_all(session=session)
+    return [crud.group_to_read_with_students(g) for g in groups]
 
 
 @router.get("/search")
@@ -39,7 +40,7 @@ def search(
     exam_date: str = None,
     participants: int = None,
     order: str = None,
-) -> list[Group]:
+) -> list[GroupReadWithStudents]:
     if exam_date is not None:
         try:
             exam_date = datetime.strptime(exam_date, "%Y-%m-%d").date()
@@ -49,7 +50,7 @@ def search(
                 detail="Invalid date format. Please use YYYY-MM-DD for the 'exam_date'.",
             )
 
-    return crud.group.search(
+    groups = crud.group.search(
         session=session,
         course=course,
         is_public=is_public,
@@ -57,6 +58,7 @@ def search(
         participants=participants,
         order=order,
     )
+    return [crud.group_to_read_with_students(g) for g in groups]
 
 
 @router.get(
@@ -67,8 +69,8 @@ def search(
     "/{group_id}",
     response_model=GroupReadWithStudents,
 )
-def get_group(group: GroupDep) -> Group:
-    return group
+def get_group(group: GroupDep) -> GroupReadWithStudents:
+    return crud.group_to_read_with_students(group)
 
 
 @router.post(
@@ -92,7 +94,7 @@ def create_group(
             detail="Course not found or exam date is not valid",
         )
 
-    return crud.group.create(
+    group = crud.group.create(
         session=session,
         obj_in=group,
         update={
@@ -101,6 +103,7 @@ def create_group(
             "super_students": [current_user],
         },
     )
+    return crud.group_to_read_with_students(group)
 
 
 @router.post(
@@ -111,7 +114,7 @@ def join_group(
     session: SessionDep,
     group: GroupDep,
     current_user: CurrStudentDep,
-) -> Group:
+) -> GroupReadWithStudents:
     # Check if the student is blocked from this group
     is_blocked = (
         session.query(Block)
@@ -124,10 +127,12 @@ def join_group(
 
     # Proceed based on group type
     if group.type == GroupType.PRIVATE:
-        return crud.group.create_request(
+        group_obj = crud.group.create_request(
             session=session, group=group, student=current_user
         )
-    return crud.group.join(session=session, group=group, student=current_user)
+        return crud.group_to_read_with_students(group_obj)
+    group_obj = crud.group.join(session=session, group=group, student=current_user)
+    return crud.group_to_read_with_students(group_obj)
 
 
 @router.delete(
@@ -170,8 +175,9 @@ def leave_group(
     session: SessionDep,
     group: GroupDep,
     current_user: CurrStudentDep,
-) -> Group:
-    return crud.group.leave(session=session, group=group, student=current_user)
+) -> GroupReadWithStudents:
+    group_obj = crud.group.leave(session=session, group=group, student=current_user)
+    return crud.group_to_read_with_students(group_obj)
 
 
 @router.get(
@@ -273,13 +279,9 @@ def block_user(
     group: GroupDep,
     student: StudentDep,
     current_user: CurrStudentDep,
-) -> Group:
-    if current_user not in group.super_students:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not a super student of this group",
-        )
-    return crud.group.block_user(session=session, group=group, student=student)
+) -> GroupReadWithStudents:
+    group_obj = crud.group.block_user(session=session, group=group, student=student)
+    return crud.group_to_read_with_students(group_obj)
 
 
 @router.post(
@@ -291,10 +293,6 @@ def unblock_user(
     group: GroupDep,
     student: StudentDep,
     current_user: CurrStudentDep,
-) -> Group:
-    if current_user not in group.super_students:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not a super student of this group",
-        )
-    return crud.group.unblock_user(session=session, group=group, student=student)
+) -> GroupReadWithStudents:
+    group_obj = crud.group.unblock_user(session=session, group=group, student=student)
+    return crud.group_to_read_with_students(group_obj)

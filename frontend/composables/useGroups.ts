@@ -380,6 +380,30 @@ async function getCoursesWithGroups() {
     }
   }
 
+  async function getGroupMemberCount(groupId: string) {
+    try {
+      isError.value = false;
+      isLoading.value = true;
+      const response = await useApiFetch(`/groups/${groupId}/students`);
+      if (!response || typeof response !== 'object') return 0;
+
+      const students = Array.isArray((response as any).students) ? (response as any).students : [];
+      const superStudents = Array.isArray((response as any).super_students) ? (response as any).super_students : [];
+
+      const uniqueIds = new Set<string>();
+      for (const s of students) uniqueIds.add(s.id);
+      for (const s of superStudents) uniqueIds.add(s.id);
+
+      return uniqueIds.size;
+    } catch (error) {
+      isError.value = true;
+      console.error('Failed to fetch member count:', error);
+      return 0;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   return {
     groups,
     isLoading,
@@ -404,5 +428,6 @@ async function getCoursesWithGroups() {
     getGroupCreationDistribution,
     getYearlyStats, 
     getCoursesWithGroups,
+    getGroupMemberCount,
   };
 }

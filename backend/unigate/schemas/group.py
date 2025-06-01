@@ -10,6 +10,8 @@ from unigate.schemas.student import StudentReadWithoutGroups
 class GroupRead(GroupBase):
     id: uuid.UUID
     date: datetime.date
+    status: str
+    member_count: int
 
 
 class GroupReadWithStudents(GroupRead):
