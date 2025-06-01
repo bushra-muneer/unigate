@@ -26,13 +26,23 @@
                 <div @click="toggleStatus(status, date)" class="cursor-pointer text-sm text-gray-600 mb-1">
                   {{ isStatusExpanded(status, date) ? '▼' : '▶' }} Exam Date: {{ formatDate(date) }} ({{ dateGroups.length }} Groups)
                 </div>
-                <div v-show="isStatusExpanded(status, date)" class="flex space-x-4 overflow-x-auto">
-                  <GroupCard
-                    v-for="group in dateGroups"
-                    :key="group.id"
-                    :group="group"
-                    class="min-w-[250px] max-w-[250px] flex-shrink-0"
-                  />
+                <div v-show="isStatusExpanded(status, date)" class="flex flex-col">
+                  <div class="flex space-x-4 overflow-x-auto">
+                    <GroupCard
+                      v-for="group in dateGroups.slice(0, getCurrentLimit(status, date))"
+                      :key="group.id"
+                      :group="group"
+                      class="min-w-[250px] max-w-[250px] flex-shrink-0"
+                    />
+                    <button
+                      v-if="dateGroups.length > getCurrentLimit(status, date)"
+                      @click="showMore(status, date)"
+                      class="min-w-[125px] max-w-[125px] flex-shrink-0 flex items-center justify-center border-2 border-gray-700 text-gray-800 font-semibold text-base rounded-full bg-white hover:bg-gray-100 transition shadow"
+                      style="height: 48px; margin-top: auto; margin-bottom: auto;"
+                    >
+                      Show more
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -75,6 +85,7 @@ const coursesWithGroups = ref<CourseWithGroups[]>([]);
 const expandedCourses = ref<string[]>([]);
 const expandedStatuses = ref<Record<string, string[]>>({});
 const isLoading = ref(false);
+const groupCardLimit = ref<Record<string, number>>({});
 
 const { getCoursesWithGroups, getGroupMemberCount } = useGroups();
 
@@ -174,6 +185,19 @@ function groupByStatus(groups: Group[]) {
     map,
     order: ['Active', 'Recently Over', 'Inactive', 'UNKNOWN']
   };
+}
+
+function getLimitKey(status: string, date: string) {
+  return `${status}_${date}`;
+}
+
+function getCurrentLimit(status: string, date: string) {
+  return groupCardLimit.value[getLimitKey(status, date)] ?? 5;
+}
+
+function showMore(status: string, date: string) {
+  const key = getLimitKey(status, date);
+  groupCardLimit.value[key] = getCurrentLimit(status, date) + 5;
 }
 </script>
 
