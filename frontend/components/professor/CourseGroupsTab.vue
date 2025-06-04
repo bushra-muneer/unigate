@@ -23,13 +23,26 @@
                 :key="date"
                 class="mb-2"
               >
-                <div @click="toggleStatus(status, date)" class="cursor-pointer text-sm text-gray-600 mb-1">
-                  {{ isStatusExpanded(status, date) ? '▼' : '▶' }} Exam Date: {{ formatDate(date) }} ({{ dateGroups.length }} Groups)
+                <div class="flex justify-between items-center mb-2">
+                  <div @click="toggleStatus(status, date)" class="cursor-pointer text-sm text-gray-600">
+                    {{ isStatusExpanded(status, date) ? '▼' : '▶' }} Exam Date: {{ formatDate(date) }} ({{ dateGroups.length }} Groups)
+                  </div>
+
+                  <!-- Новый Sort by -->
+                  <div class="flex items-center space-x-2">
+                    <span class="text-sm font-medium text-gray-700">Sort by:</span>
+                    <select v-model="selectedSorts[`${status}_${date}`]" class="border rounded px-2 py-1 text-sm">
+                      <option value="creation">Creation Date</option>
+                      <option value="asc">Members - ASC</option>
+                      <option value="desc">Members - DESC</option>
+                    </select>
+                  </div>
                 </div>
+
                 <div v-show="isStatusExpanded(status, date)" class="flex flex-col">
                   <div class="flex space-x-4 overflow-x-auto">
                     <GroupCard
-                      v-for="group in dateGroups.slice(0, getCurrentLimit(status, date))"
+                      v-for="group in getSortedGroups(status, date, dateGroups).slice(0, getCurrentLimit(status, date))"
                       :key="group.id"
                       :group="group"
                       class="min-w-[250px] max-w-[250px] flex-shrink-0"
@@ -50,8 +63,6 @@
         </div>
       </div>
     </div>
-
-  
   </div>
 </template>
 
@@ -86,6 +97,7 @@ const expandedCourses = ref<string[]>([]);
 const expandedStatuses = ref<Record<string, string[]>>({});
 const isLoading = ref(false);
 const groupCardLimit = ref<Record<string, number>>({});
+const selectedSorts = ref<Record<string, string>>({});
 
 const { getCoursesWithGroups, getGroupMemberCount } = useGroups();
 
@@ -93,10 +105,8 @@ async function fetchGroupsWithMemberCounts() {
   try {
     isLoading.value = true;
     const res = await getCoursesWithGroups() as CourseWithGroups[];
-    // Для каждой группы получаем member_count
     for (const course of res) {
       for (const group of course.groups) {
-        console.log('group:', group);
         group.member_count = await getGroupMemberCount(group.id);
       }
     }
@@ -111,6 +121,20 @@ async function fetchGroupsWithMemberCounts() {
 onMounted(() => {
   fetchGroupsWithMemberCounts();
 });
+
+function getSortedGroups(status: string, date: string, groups: Group[]) {
+  const sortKey = `${status}_${date}`;
+  const selectedSort = selectedSorts.value[sortKey] || 'creation';
+  const sorted = [...groups];
+
+  if (selectedSort === 'asc') {
+    sorted.sort((a, b) => (a.member_count ?? 0) - (b.member_count ?? 0));
+  } else if (selectedSort === 'desc') {
+    sorted.sort((a, b) => (b.member_count ?? 0) - (a.member_count ?? 0));
+  }
+
+  return sorted;
+}
 
 function scrollLeft() {
   carousel.value?.scrollBy({ left: -300, behavior: 'smooth' });
