@@ -2,54 +2,68 @@
   <div class="p-8 relative">
     <h2 class="text-2xl font-semibold mb-4">Course Groups</h2>
 
-    <div v-if="isLoading" class="flex justify-center items-center py-8">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+    <!-- Search Input -->
+    <div class="mb-4 relative">
+      <input
+        type="text"
+        placeholder="Search by Group Name, Course Name"
+        class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        v-model="searchQuery"
+      />
+      <button
+        v-if="searchQuery"
+        @click="clearSearch"
+        class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500"
+      >
+        ✕
+      </button>
     </div>
+    <!-- End Search Input -->
 
-    <div v-else v-for="course in coursesWithGroups" :key="course.courseId" class="mb-6 border rounded-lg p-4">
+    <div v-for="course in filteredCoursesWithGroups" :key="course.courseId" class="mb-6 border rounded-lg p-4">
       <div @click="toggleCourse(course.courseId)" class="cursor-pointer font-bold">
         {{ isCourseExpanded(course.courseId) ? '▼' : '▶' }} {{ course.courseName }} ({{ course.groups.length }} Groups)
       </div>
 
       <div v-show="isCourseExpanded(course.courseId)" class="pl-4 mt-2">
-        <div v-for="status in groupByStatus(course.groups).order" :key="status">
-          <div v-if="groupByStatus(course.groups).map[status]">
-            <div @click="toggleStatus(course.courseId, status)" class="cursor-pointer font-semibold">
-              {{ isStatusExpanded(course.courseId, status) ? '▼' : '▶' }} {{ status }} ({{ groupByStatus(course.groups).map[status].length }} Groups)
-            </div>
-            <div v-show="isStatusExpanded(course.courseId, status)" class="pl-4 mt-1">
-              <div
-                v-for="(dateGroups, date) in groupByDate(groupByStatus(course.groups).map[status])"
-                :key="date"
-                class="mb-2"
-              >
-                <div @click="toggleStatus(status, date)" class="cursor-pointer text-sm text-gray-600 mb-1">
-                  {{ isStatusExpanded(status, date) ? '▼' : '▶' }} Exam Date: {{ formatDate(date) }} ({{ dateGroups.length }} Groups)
-                </div>
-                <div v-show="isStatusExpanded(status, date)" class="flex flex-col">
-                  <div class="flex space-x-4 overflow-x-auto">
-                    <GroupCard
-                      v-for="group in dateGroups.slice(0, getCurrentLimit(status, date))"
-                      :key="group.id"
-                      :group="group"
-                      class="min-w-[250px] max-w-[250px] flex-shrink-0"
-                    />
-                    <button
-                      v-if="dateGroups.length > getCurrentLimit(status, date)"
-                      @click="showMore(status, date)"
-                      class="min-w-[125px] max-w-[125px] flex-shrink-0 flex items-center justify-center border-2 border-gray-700 text-gray-800 font-semibold text-base rounded-full bg-white hover:bg-gray-100 transition shadow"
-                      style="height: 48px; margin-top: auto; margin-bottom: auto;"
-                    >
-                      Show more
-                    </button>
-                  </div>
-                </div>
+        <div
+          v-for="(typeGroups, type) in groupByType(course.groups)"
+          :key="type"
+          class="mb-3"
+        >
+          <div @click="toggleStatus(course.courseId, type)" class="cursor-pointer font-semibold">
+            {{ isStatusExpanded(course.courseId, type) ? '▼' : '▶' }} {{ type }} ({{ typeGroups.length }} Groups)
+          </div>
+
+          <div v-show="isStatusExpanded(course.courseId, type)" class="pl-4 mt-1">
+            <div
+              v-for="(dateGroups, date) in groupByDate(typeGroups)"
+              :key="date"
+              class="mb-2"
+            >
+              <div @click="toggleStatus(type, date)" class="cursor-pointer text-sm text-gray-600 mb-1">
+                {{ isStatusExpanded(type, date) ? '▼' : '▶' }} Exam Date: {{ formatDate(date) }} ({{ dateGroups.length }} Groups)
+              </div>
+              <div v-show="isStatusExpanded(type, date)" class="flex space-x-4 overflow-x-auto">
+              
+                <GroupCard
+                  v-for="group in dateGroups"
+                  :key="group.id"
+                  :group="group"
+                  class="min-w-[250px] max-w-[250px] flex-shrink-0"
+                />
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- No Results Found Message -->
+    <div v-if="filteredCoursesWithGroups.length === 0 && searchQuery">
+      <p class="text-center text-gray-500">No results found.</p>
+    </div>
+    <!-- End No Results Found Message -->
 
   
   </div>
@@ -58,20 +72,17 @@
 <script setup lang="ts">
 import { useGroups } from '@/composables/useGroups';
 import { format } from 'date-fns';
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import GroupCard from './GroupCardComp.vue';
 
 interface Group {
   id: string;
   name: string;
   type: string;
-  date: string;
-  description: string;
   examDate: string;
-  courseName: string;
-  tags: string[];
-  member_count?: number;
-  status?: string;
+  description: string;
+  memberCount: number;
+  date: string;
 }
 
 interface CourseWithGroups {
@@ -84,32 +95,17 @@ const carousel = ref<HTMLDivElement | null>(null);
 const coursesWithGroups = ref<CourseWithGroups[]>([]);
 const expandedCourses = ref<string[]>([]);
 const expandedStatuses = ref<Record<string, string[]>>({});
-const isLoading = ref(false);
-const groupCardLimit = ref<Record<string, number>>({});
+const searchQuery = ref('');
 
-const { getCoursesWithGroups, getGroupMemberCount } = useGroups();
+const { getCoursesWithGroups } = useGroups();
 
-async function fetchGroupsWithMemberCounts() {
+onMounted(async () => {
   try {
-    isLoading.value = true;
-    const res = await getCoursesWithGroups() as CourseWithGroups[];
-    // Для каждой группы получаем member_count
-    for (const course of res) {
-      for (const group of course.groups) {
-        console.log('group:', group);
-        group.member_count = await getGroupMemberCount(group.id);
-      }
-    }
-    coursesWithGroups.value = res;
+    const res = await getCoursesWithGroups();
+    coursesWithGroups.value = res as CourseWithGroups[];
   } catch (error) {
     console.error('Failed to fetch courses with groups:', error);
-  } finally {
-    isLoading.value = false;
   }
-}
-
-onMounted(() => {
-  fetchGroupsWithMemberCounts();
 });
 
 function scrollLeft() {
@@ -119,8 +115,8 @@ function scrollRight() {
   carousel.value?.scrollBy({ left: 300, behavior: 'smooth' });
 }
 
-function groupByType(groups: any[]) {
-  const map: Record<string, any[]> = {};
+function groupByType(groups: Group[]) {
+  const map: Record<string, Group[]> = {};
   for (const g of groups) {
     const key = g.type || 'Unknown';
     if (!map[key]) map[key] = [];
@@ -129,8 +125,8 @@ function groupByType(groups: any[]) {
   return map;
 }
 
-function groupByDate(groups: any[]) {
-  const map: Record<string, any[]> = {};
+function groupByDate(groups: Group[]) {
+  const map: Record<string, Group[]> = {};
   for (const g of groups) {
     const key = g.examDate || 'No Date';
     if (!map[key]) map[key] = [];
@@ -174,31 +170,42 @@ function isStatusExpanded(parentId: string, childKey: string) {
   return expandedStatuses.value[parentId]?.includes(childKey);
 }
 
-function groupByStatus(groups: Group[]) {
-  const map: Record<string, Group[]> = {};
-  for (const g of groups) {
-    const key = g.status || 'UNKNOWN';
-    if (!map[key]) map[key] = [];
-    map[key].push(g);
+function clearSearch() {
+  searchQuery.value = '';
+}
+
+// Computed property for filtering courses and groups
+const filteredCoursesWithGroups = computed(() => {
+  if (!searchQuery.value) {
+    // Map examDate to date and format for the original coursesWithGroups when no search query
+    return coursesWithGroups.value.map(course => ({
+      ...course,
+      groups: course.groups.map(group => ({
+        ...group,
+        date: formatDate(group.examDate),
+      })),
+    }));
   }
-  return {
-    map,
-    order: ['Active', 'Recently Over', 'Inactive', 'UNKNOWN']
-  };
-}
+  const lowerCaseQuery = searchQuery.value.toLowerCase();
 
-function getLimitKey(status: string, date: string) {
-  return `${status}_${date}`;
-}
+  return coursesWithGroups.value.map(course => {
+    const filteredGroups = course.groups.filter(group => {
+      // Check if group name or course name includes the search query
+      return group.name.toLowerCase().includes(lowerCaseQuery) ||
+             course.courseName.toLowerCase().includes(lowerCaseQuery);
+    }).map(group => ({ // Map to the structure expected by GroupCardComp.vue, including formatted date
+      ...group,
+      date: formatDate(group.examDate), // Map examDate to date and format it
+    }));
 
-function getCurrentLimit(status: string, date: string) {
-  return groupCardLimit.value[getLimitKey(status, date)] ?? 5;
-}
-
-function showMore(status: string, date: string) {
-  const key = getLimitKey(status, date);
-  groupCardLimit.value[key] = getCurrentLimit(status, date) + 5;
-}
+    // Only include courses that have at least one matching group, or if the course name itself matches
+    if (filteredGroups.length > 0 || course.courseName.toLowerCase().includes(lowerCaseQuery)) {
+      return { ...course, groups: filteredGroups };
+    } else {
+      return null; // Exclude courses with no matching groups and no matching course name
+    }
+  }).filter(course => course !== null) as CourseWithGroups[]; // Remove null entries and cast
+});
 </script>
 
 <style>
