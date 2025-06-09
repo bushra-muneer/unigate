@@ -195,14 +195,14 @@ onMounted(fetchProfessorsCourses);
         Select a course to view details
       </div>
 
-      <div v-if="studentNames.length" class="mt-8">
+<!--<div v-if="studentNames.length" class="mt-8">
         <h2 class="text-xl font-semibold mb-2">Enrolled Students</h2>
         <ul class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
           <li v-for="name in studentNames" :key="name" class="bg-white shadow rounded p-2">
             {{ name }}
           </li>
         </ul>
-      </div>
+      </div>-->
 
       <div v-if="groupCreationData.length" class="mt-8">
         <h2 class="text-xl font-semibold mb-2">Group Creation Over Time</h2>
