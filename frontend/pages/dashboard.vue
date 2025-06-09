@@ -328,7 +328,7 @@ onMounted(fetchProfessorsCourses);
         </div>
 
         <!-- Add Student Names Section before Group Creation Chart -->
-        <div
+        <!-- <div
           v-if="filteredCourses.length && studentNames.length > 0"
           class="mt-8 mb-8"
         >
@@ -347,7 +347,7 @@ onMounted(fetchProfessorsCourses);
               Total Students: {{ studentNames.length }}
             </div>
           </div>
-        </div>
+        </div> -->
 
         <!-- Group Creation Chart -->
         <div
