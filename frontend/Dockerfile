@@ -2,15 +2,13 @@ FROM node:23.4-bookworm-slim
 
 WORKDIR /app
 
-# ref: https://pnpm.io/docker
-ENV PNPM_HOME=/pnpm
-
-ENV PATH="$PNPM_HOME:$PATH"
-
-RUN corepack enable
+# Install pnpm directly to avoid Corepack issues
+RUN npm install -g pnpm
 
 COPY ./ /app/
 
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+# Optional: speed up installs with a cache mount
+RUN --mount=type=cache,id=pnpm,target=/root/.pnpm-store pnpm install --frozen-lockfile
 
 CMD ["pnpm", "run", "dev"]
+
