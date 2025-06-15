@@ -21,13 +21,25 @@ def create_access_token(
     return jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)  # type: ignore
 
 
+# def verify_password(plain_password: str | bytes, hashed_password: str | bytes) -> bool:
+#     if isinstance(plain_password, str):
+#         plain_password = plain_password.encode()
+#     if isinstance(hashed_password, str):
+#         hashed_password = hashed_password.encode()
+
+#     return bcrypt.checkpw(plain_password, hashed_password)
+
 def verify_password(plain_password: str | bytes, hashed_password: str | bytes) -> bool:
     if isinstance(plain_password, str):
         plain_password = plain_password.encode()
     if isinstance(hashed_password, str):
         hashed_password = hashed_password.encode()
 
+    print(f"[DEBUG] Checking password: {plain_password}")
+    print(f"[DEBUG] Against hash: {hashed_password}")
+
     return bcrypt.checkpw(plain_password, hashed_password)
+
 
 
 def get_password_hash(plain_password: str | bytes) -> str:
