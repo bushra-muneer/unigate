@@ -2,6 +2,7 @@ import random
 from datetime import datetime
 
 import pytz
+from unigate.utils.exam_sync import sync_exam_results
 from unigate import crud
 from unigate.core.database import get_auth_session, get_session
 from unigate.core.security import get_password_hash
@@ -106,6 +107,15 @@ groups = [
         date=datetime(2025, 1, 1, tzinfo=pytz.utc),
         exam_date=datetime(2025, 1, 1, tzinfo=pytz.utc),
     ),
+     GroupCreate(
+        name="Test Public Group",
+        description="This is a test group",
+        category="Test",
+        type=GroupType.PUBLIC,
+        course_name="Test Course",
+        date=datetime(2025, 2, 2, tzinfo=pytz.utc),
+        exam_date=datetime(2025, 2, 2, tzinfo=pytz.utc),
+    ),
     GroupCreate(
         name="Test Private Group",
         description="This is a test group",
@@ -207,8 +217,11 @@ def seed_unigate() -> None:
             current_group.super_students.append(current_student)
             session.add(current_group)
             session.commit()
+            
 
 
 if __name__ == "__main__":
     seed_auth()
     seed_unigate()
+    import asyncio
+    asyncio.run(sync_exam_results())

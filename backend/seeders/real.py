@@ -1,7 +1,9 @@
 from datetime import datetime
 from itertools import cycle
+import asyncio
 
 import pytz
+from unigate.utils.exam_sync import sync_exam_results
 from unigate import crud
 from unigate.core.database import get_auth_session, get_session
 from unigate.core.security import get_password_hash
@@ -180,3 +182,4 @@ def seed_unigate() -> None:
 if __name__ == "__main__":
     seed_auth()
     seed_unigate()
+    asyncio.run(sync_exam_results())
