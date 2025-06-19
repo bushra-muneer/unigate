@@ -10,6 +10,7 @@ from unigate.models.super_student import SuperStudent
 if TYPE_CHECKING:
     from unigate.models.group import Group
     from unigate.models.request import Request
+    from unigate.models.exam_result import ExamResult
 
 
 class Student(DBUnigateBase, UUIDBase, UserBase, table=True):
@@ -32,3 +33,7 @@ class Student(DBUnigateBase, UUIDBase, UserBase, table=True):
     blocked_groups: list["Group"] = Relationship(
         back_populates="blocked_students", link_model=Block
     )
+    exam_results: list["ExamResult"] = Relationship(
+        back_populates="student",  # type: ignore
+    )
+

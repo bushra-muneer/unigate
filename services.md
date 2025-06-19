@@ -4,3 +4,4 @@ minio: localhost:9000
 minioadmin: localhost:9001
 api: localhost:8000
 frontend: localhost:3000
+university-stub: localhost:8001

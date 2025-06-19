@@ -14,6 +14,7 @@ from unigate.models.course import Course
 from unigate.models.exam import Exam
 from unigate.models.group import Group
 from unigate.models.join import Join
+from unigate.models.exam_result import ExamResult
 from unigate.models.request import Request, RequestStatus
 from unigate.models.student import Student
 from unigate.models.super_student import SuperStudent
@@ -26,6 +27,7 @@ __all__ = [
     "DBAuthBase",
     "DBUnigateBase",
     "Exam",
+    "ExamResult",
     "Group",
     "GroupBase",
     "Join",

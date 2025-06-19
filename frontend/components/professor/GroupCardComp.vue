@@ -36,9 +36,29 @@
       <p class="text-xs text-gray-600">{{ group.description }}</p>
     </div>
     <div>
-        <span class="inline-block bg-gray-300 text-gray-800 rounded px-2 py-0.5 text-xs font-medium mb-2">
-          {{ group.tags && group.tags.length ? group.tags[0] : group.courseName }}
-        </span>
+        <!-- <span class="inline-block bg-gray-300 text-gray-800 rounded px-2 py-0.5 text-xs font-medium mb-2">
+         {{ group.tags && group.tags.length 
+  ? group.tags.slice(0, 3).join(', ') 
+  : group.courseName }}
+        </span> -->
+        <div>
+  <!-- Check if group.tags exists and has length -->
+  <template v-if="group.tags && group.tags.length">
+    <template v-for="(tag, index) in group.tags.slice(0, 3)" :key="index">
+      <span class="inline-block bg-gray-300 text-gray-800 rounded px-2 py-0.5 text-xs font-medium mb-2">
+        {{ tag }}
+      </span>
+    </template>
+  </template>
+
+  <!-- If no tags, show courseName instead -->
+  <template v-else>
+    <span class="inline-block bg-gray-300 text-gray-800 rounded px-2 py-0.5 text-xs font-medium mb-2">
+      {{ group.courseName }}
+    </span>
+  </template>
+</div>
+
       </div>
     <div class="flex justify-between items-center text-sm text-gray-600 mt-4">
       <div class="flex items-center gap-1">
