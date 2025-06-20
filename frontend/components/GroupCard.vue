@@ -1,95 +1,116 @@
 <script setup lang="ts">
-import { defineProps } from "vue";
 import { useRouter } from "vue-router";
+import { format } from "date-fns";
 
-// Define the Group interface with required fields
-interface Group {
-  name: string;
-  category: string;
-  id: string;
-  description: string;
-  recentActivity: string;
-  members_count: number;
+const props = defineProps<{
+  group: {
+    id: string;
+    name: string;
+    type?: "Public" | "Private";
+    date?: string;
+    description: string;
+    exam_date?: string; // student
+    examDate?: string;  // professor
+    courseName?: string;
+    course_name?: string;
+    members_count?: number; // student
+    member_count?: number;  // professor
+    tags?: string[];
+    [key: string]: any;
+  };
+}>();
+
+const router = useRouter();
+
+function formatDate(date: string) {
+  try {
+    return format(new Date(date), "dd/MM/yyyy");
+  } catch {
+    return date;
+  }
 }
 
-const props = defineProps<{ group: Group }>();
-const router = useRouter();
-const { getGroupById, checkAuthStatus } = useGroups();
+function goToGroupPage() {
+  router.push(`/groups/${props.group.id}`);
+}
 
-const goToGroupPage = async () => {
-  try {
-    // First verify authentication status
-    const isAuthenticated = await checkAuthStatus();
-    if (!isAuthenticated) {
-      router.push("/login");
-      return;
-    }
-
-    // Try to get group details
-    const groupDetails = await getGroupById(props.group.id);
-    if (groupDetails) {
-      router.push(`/groups/${props.group.id}`);
-    }
-  } catch (error) {
-    console.error("Error navigating to group:", error);
-    // Only redirect to login for actual auth errors
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      router.push("/login");
-    }
-  }
-};
+const memberCount = props.group.member_count ?? props.group.members_count ?? 0;
+const examDate = props.group.examDate ?? props.group.exam_date ?? props.group.date ?? "";
+const courseName = props.group.courseName ?? props.group.course_name ?? "";
+const groupType = props.group.type ?? "Public";
+const name = props.group.name;
+const description = props.group.description;
+const tags = props.group.tags ?? [];
 </script>
 
 <template>
-  <div class="flex flex-wrap gap-4 justify-center">
-    <Card
-      height="330px"
-      width="100%"
-      v-if="group"
-      class="max-w-sm flex flex-col h-full"
-    >
-      <div class="bg-stone-100 rounded-2xl m-4">
-        <CardHeader>
-          <div class="flex items-center space-x-5">
-            <Avatar>
-              <AvatarImage
-                src="https://github.com/radix-vue.png"
-                alt="@radix-vue"
-              />
-              <AvatarFallback>CN</AvatarFallback>
-            </Avatar>
-            <div class="flex-1 min-w-1">
-              <CardTitle
-                class="text-sm truncate overflow-hidden text-ellipsis whitespace-nowrap"
-                >{{ group.name }}</CardTitle
-              >
-              <CardDescription
-                class="text-xs truncate overflow-hidden text-ellipsis whitespace-nowrap"
-                >{{ group.category }}</CardDescription
-              >
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent class="flex flex-col gap-5 mt-5 mr-5 mb-5 flex-grow">
-          <p class="text-sm overflow-hidden line-clamp-2">
-            {{ group.description }}
-          </p>
-          <p class="text-xs text-muted-foreground">
-            Members: {{ group.members_count }}
-          </p>
-        </CardContent>
+  <div
+    class="bg-gray-100 rounded-lg shadow p-4 flex flex-col justify-between h-48 w-full cursor-pointer transition-shadow hover:shadow-lg hover:bg-gray-200 select-none"
+    @click="goToGroupPage"
+    tabindex="0"
+    @keydown.enter="goToGroupPage"
+    :aria-label="`View details for group ${name}`"
+    role="button"
+  >
+    <div>
+      <div class="flex items-start space-x-1 font-semibold text-gray-800 text-sm mb-1">
+        <span>
+          <svg
+            v-if="groupType === 'Public'"
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-4 h-4 text-gray-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 17a2 2 0 002-2v-2a2 2 0 00-4 0v2a2 2 0 002 2zm6-6V9a6 6 0 10-12 0v2a2 2 0 00-2 2v7a2 2 0 002 2h12a2 2 0 002-2v-7a2 2 0 00-2-2zm-8-2a4 4 0 118 0v2H6V9z"
+            />
+          </svg>
+          <svg
+            v-else
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-4 h-4 text-gray-500"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 17a2 2 0 002-2v-2a2 2 0 00-4 0v2a2 2 0 002 2zm6-6V9a6 6 0 10-12 0v2a2 2 0 00-2 2v7a2 2 0 002 2h12a2 2 0 002-2v-7a2 2 0 00-2-2zm-8-2a4 4 0 118 0v2H6V9z"
+            />
+          </svg>
+        </span>
+        <span class="line-clamp-2">{{ name }}</span>
       </div>
-      <CardFooter class="mt-auto p-0 flex justify-center">
-        <Button
-          id="details"
-          class="w-1/2 bg-gradient-to-r from-indigo-500 to-blue-500 text-white font-semibold py-1 px-2 rounded-2xl shadow-lg hover:from-blue-500 hover:to-blue-600 hover:shadow-xl active:scale-95 transition-all mb-4"
-          @click="goToGroupPage"
-        >
-          View Group
-        </Button>
-      </CardFooter>
-    </Card>
+      <p class="text-xs text-gray-600">{{ description }}</p>
+    </div>
+    <div>
+      <span class="inline-block bg-gray-300 text-gray-800 rounded px-2 py-0.5 text-xs font-medium mb-2">
+        {{ tags.length ? tags[0] : courseName }}
+      </span>
+    </div>
+    <div class="flex justify-between items-center text-sm text-gray-600 mt-4">
+      <div class="flex items-center gap-1">
+        <svg class="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M13 7a3 3 0 11-6 0 3 3 0 016 0zM4 14s1-1 6-1 6 1 6 1v1H4v-1z" />
+        </svg>
+        <span>{{ memberCount }}</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <svg class="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M6 2a1 1 0 011 1v1h6V3a1 1 0 112 0v1a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2V3a1 1 0 011-1z" />
+        </svg>
+        <span>{{ formatDate(examDate) }}</span>
+      </div>
+    </div>
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.bg-gray-100:focus {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+</style>
