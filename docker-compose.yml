@@ -1,4 +1,3 @@
-
 services:
   postgres-unigate:
     container_name: postgres-unigate
@@ -121,6 +120,7 @@ services:
       - ./backend/alembic_unigate:/app/alembic_unigate
       - ./backend/alembic_auth:/app/alembic_auth
       - ./backend/seeders:/app/seeders
+      - ./backend/tests:/app/tests
     depends_on:
       postgres-unigate:
         condition: service_healthy

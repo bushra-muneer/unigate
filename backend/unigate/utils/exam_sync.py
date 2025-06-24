@@ -15,28 +15,33 @@ async def sync_exam_results(base_url: str = "http://host.docker.internal:8001") 
                 print(f"Exam date: {exam.date}")
                 url = f"/exams/{course.name}/{exam.date}"
                 print(f"Syncing exam results for {course.name} on {exam.date} from {url}")
-                response = await client.get(url)
-                print(f"Requesting: {url} => {response.status_code}")
-                if response.status_code != 200:
-                    continue
-                data = response.json()
-                crud.exam_result.delete_exam(
-                    session=session,
-                    course_name=course.name,
-                    exam_date=exam.date,
-                )
-                for number in data["enrolled"]:
-                    student = crud.student.get_by_number(number=number, session=session)
-                    if not student:
+                try:
+                    response = await client.get(url)
+                    print(f"Requesting: {url} => {response.status_code}")
+                    if response.status_code != 200:
                         continue
-                    crud.exam_result.create(
+                    data = await response.json()
+                    crud.exam_result.delete_exam(
                         session=session,
-                        obj_in=ExamResultCreate(
-                            student_id=student.id,
-                            course_name=course.name,
-                            exam_date=exam.date,
-                            passed=number in data["passed"],
-                        ),
+                        course_name=course.name,
+                        exam_date=exam.date,
                     )
+                    enrolled = data.get("enrolled", [])
+                    passed = data.get("passed", [])
+                    for number in enrolled:
+                        student = crud.student.get_by_number(number=number, session=session)
+                        if not student:
+                            continue
+                        crud.exam_result.create(
+                            session=session,
+                            obj_in=ExamResultCreate(
+                                student_id=student.id,
+                                course_name=course.name,
+                                exam_date=exam.date,
+                                passed=number in passed,
+                            ),
+                        )
+                except Exception as e:
+                    print(f"Error syncing exam results for {course.name} on {exam.date}: {e}")
     auth_session.close()
     session.close()
