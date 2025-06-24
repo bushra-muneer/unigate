@@ -8,6 +8,7 @@ from unigate import crud
 from unigate.core.config import settings
 from unigate.core.database import get_session
 from unigate.routes import auth, course, group, professor, student
+from unigate.utils.scheduler import start_scheduler
 
 app = FastAPI()
 
@@ -68,6 +69,7 @@ app.include_router(group.router, prefix="/groups")
 app.include_router(course.router, prefix="/courses")
 app.include_router(professor.router, prefix="/professors")
 
+start_scheduler()
 
 if __name__ == "__main__":
     import uvicorn

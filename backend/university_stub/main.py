@@ -1,7 +1,8 @@
-from fastapi import FastAPI, HTTPException
-from datetime import date
-from pydantic import BaseModel
 import random
+from datetime import date
+
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
 app = FastAPI(title="University Stub")
 
@@ -133,3 +134,7 @@ async def get_exam_result(course: str, exam_date: str) -> ExamResult:
         enrolled=enrolled,
         passed=passed
     )
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8001)
