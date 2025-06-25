@@ -55,14 +55,15 @@ def get_group_number(
 )
 def get_groups(
     session: SessionDep, auth_session: AuthSessionDep, course_name: str
-) -> list[Group]:
+) -> list[GroupReadWithStudents]:
     course = crud.course.get_by_name(auth_session=auth_session, name=course_name)
     if not course:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Course not found",
         )
-    return crud.group.get_groups_course(session=session, course_name=course_name)
+    groups = crud.group.get_groups_course(session=session, course_name=course_name)
+    return [crud.group_to_read_with_students(g) for g in groups]
 
 
 @router.get(

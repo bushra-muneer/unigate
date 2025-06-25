@@ -1,5 +1,7 @@
 from logging.config import fileConfig
 from pathlib import Path
+from unigate.models import feedback_response
+
 
 from alembic import context
 from dotenv import load_dotenv

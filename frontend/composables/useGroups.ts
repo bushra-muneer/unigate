@@ -343,6 +343,24 @@ export function useGroups() {
     }
   }
 
+  // Function to fetch professor's courses with group details
+async function getCoursesWithGroups() {
+  try {
+    isError.value = false;
+    isLoading.value = true;
+    const response = await useApiFetch("/professors/courses-with-groups", {
+  method: "GET",
+});
+    return response;
+  } catch (error) {
+    isError.value = true;
+    throw error;
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+
   async function getYearlyStats(courseName: string) {
     try {
       isError.value = false;
@@ -357,6 +375,30 @@ export function useGroups() {
     } catch (error) {
       isError.value = true;
       throw error;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  async function getGroupMemberCount(groupId: string) {
+    try {
+      isError.value = false;
+      isLoading.value = true;
+      const response = await useApiFetch(`/groups/${groupId}/students`);
+      if (!response || typeof response !== 'object') return 0;
+
+      const students = Array.isArray((response as any).students) ? (response as any).students : [];
+      const superStudents = Array.isArray((response as any).super_students) ? (response as any).super_students : [];
+
+      const uniqueIds = new Set<string>();
+      for (const s of students) uniqueIds.add(s.id);
+      for (const s of superStudents) uniqueIds.add(s.id);
+
+      return uniqueIds.size;
+    } catch (error) {
+      isError.value = true;
+      console.error('Failed to fetch member count:', error);
+      return 0;
     } finally {
       isLoading.value = false;
     }
@@ -384,6 +426,8 @@ export function useGroups() {
     getAverageMembers,
     getActiveGroupCount,
     getGroupCreationDistribution,
-    getYearlyStats,
+    getYearlyStats, 
+    getCoursesWithGroups,
+    getGroupMemberCount,
   };
 }

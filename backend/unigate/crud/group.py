@@ -1,4 +1,5 @@
 import datetime
+from datetime import date, timedelta
 
 from fastapi import Depends
 from sqlmodel import Session, and_, select
@@ -11,9 +12,22 @@ from unigate.models.request import Request
 from unigate.models.student import Student
 from unigate.schemas.group import (
     GroupCreate,
+    GroupReadWithStudents,
     NumberMembersOfGroups,
     NumberOfGroupsResponse,
 )
+
+
+def get_group_status(exam_date: date) -> str:
+    today = date.today()
+    if exam_date is None:
+        return "Inactive"
+    if exam_date > today:
+        return "Active"
+    elif today - exam_date <= timedelta(days=30):  # например, 30 дней
+        return "Recently Over"
+    else:
+        return "Inactive"
 
 
 class CRUDGroup(CRUDBase[Group, GroupCreate, Group]):
@@ -176,6 +190,18 @@ class CRUDGroup(CRUDBase[Group, GroupCreate, Group]):
             "max": max(members),
             "members": {str(group.name): len(group.students) for group in groups},
         }
+
+
+def group_to_read_with_students(group: Group) -> GroupReadWithStudents:
+    return GroupReadWithStudents(
+        **group.__dict__,
+        status=get_group_status(group.exam_date),
+        member_count=len(group.students),
+        students=group.students,
+        creator=group.creator,
+        super_students=group.super_students,
+        blocked_students=group.blocked_students,
+    )
 
 
 group = CRUDGroup(Group)

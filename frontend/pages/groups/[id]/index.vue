@@ -193,7 +193,13 @@
             </p>
           </div>
 
-          <div>
+          <!-- Group Feedback Section -->
+          <div v-if="group && is_member_of" class="text-left mb-12">
+            <p class="text-sm text-gray-500 mb-4">Help professors to give you a better advice</p>
+            <GroupFeedback :exam-date="group.exam_date" />
+          </div>
+
+          <div class="mb-20">
             <div v-if="isLoadingStatus">
               <LoadingIndicator />
             </div>
@@ -260,13 +266,35 @@
 <script setup lang="ts">
 import { Toaster } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/toast/use-toast";
-import { computed, ref, onMounted } from "vue";
+import { ref, computed, onMounted } from '#imports'
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useRoute, useRouter } from "vue-router";
 import { useGroups } from "@/composables/useGroups";
 import { useCurrentStudent } from "@/composables/useCurrentStudent";
+import GroupFeedback from "@/components/GroupFeedback.vue";
+
+interface Student {
+  id: string;
+  number: string;
+  name: string;
+  surname: string;
+  email: string;
+}
+
+interface Group {
+  id: string;
+  name: string;
+  description: string;
+  members_count: number;
+  exam_date: string;
+  students: Student[];
+  super_students: Student[];
+  blocked_students: Student[];
+  tags: string[];
+  type: 'Public' | 'Private';
+}
 
 const route = useRoute();
 const router = useRouter();
@@ -283,14 +311,14 @@ const { currentStudent, getCurrentStudent } = useCurrentStudent();
 const groupId = route.params.id;
 const isLoading = ref(false);
 const isError = ref(false);
-const group = ref<any>(null);
+const group = ref<Group | null>(null);
 const isBlocked = ref(false);
 const is_member_of = computed(() => {
-  const isStudent = group.value.students?.some(
+  const isStudent = group.value?.students?.some(
     (student) => student.number === currentStudent.value?.number,
   );
 
-  const isSuperStudent = group.value.super_students?.some(
+  const isSuperStudent = group.value?.super_students?.some(
     (superStudent) => superStudent.number === currentStudent.value?.number,
   );
 
