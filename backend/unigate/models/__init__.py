@@ -1,4 +1,4 @@
-from sqlmodel import SQLModel  # type: ignore  # noqa: F401
+from sqlmodel import SQLModel  # type: ignore # noqa: F401
 
 from unigate.models.auth import AuthUser
 from unigate.models.base import (
@@ -12,6 +12,7 @@ from unigate.models.base import (
 from unigate.models.block import Block
 from unigate.models.course import Course
 from unigate.models.exam import Exam
+from unigate.models.feedback_response import FeedbackResponse
 from unigate.models.group import Group
 from unigate.models.join import Join
 from unigate.models.exam_result import ExamResult
@@ -27,7 +28,8 @@ __all__ = [
     "DBAuthBase",
     "DBUnigateBase",
     "Exam",
-    "ExamResult",
+     "ExamResult",
+     "FeedbackResponse",
     "Group",
     "GroupBase",
     "Join",

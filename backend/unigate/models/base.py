@@ -56,4 +56,3 @@ class CourseBase(SQLModel):
 class ExamBase(SQLModel):
     course_id: uuid.UUID = Field(foreign_key="courses.id", ondelete="CASCADE")
     date: datetime.date
-

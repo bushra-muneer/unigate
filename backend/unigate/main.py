@@ -7,8 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from unigate import crud
 from unigate.core.config import settings
 from unigate.core.database import get_session
-from unigate.routes import auth, course, group, professor, student
 from unigate.utils.scheduler import start_scheduler
+from unigate.routes import auth, course, group, professor, student, feedback_response
 
 app = FastAPI()
 
@@ -68,6 +68,7 @@ app.include_router(student.router, prefix="/students")
 app.include_router(group.router, prefix="/groups")
 app.include_router(course.router, prefix="/courses")
 app.include_router(professor.router, prefix="/professors")
+app.include_router(feedback_response.router)
 
 start_scheduler()
 

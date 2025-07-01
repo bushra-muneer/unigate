@@ -194,9 +194,9 @@
           </div>
 
           <!-- Group Feedback Section -->
-          <div class="text-left mb-12">
+          <div v-if="group && is_member_of" class="text-left mb-12">
             <p class="text-sm text-gray-500 mb-4">Help professors to give you a better advice</p>
-            <GroupFeedback v-if="is_member_of" :exam-date="group.exam_date" />
+            <GroupFeedback :exam-date="group.exam_date" />
           </div>
 
           <div class="mb-20">
