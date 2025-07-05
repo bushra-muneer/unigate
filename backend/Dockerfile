@@ -1,47 +1,43 @@
+
 FROM python:3.12-slim-bookworm
 
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app
 
 WORKDIR /app/
 
-# install uv
-# ref: https://docs.astral.sh/uv/guides/integration/docker/#installing-uv
+# Install uv
 COPY --from=ghcr.io/astral-sh/uv:0.5.9 /uv /bin/uv
 
-# place executables in the environment at the front of the path
-# ref: https://docs.astral.sh/uv/guides/integration/docker/#using-the-environment
+# Virtual environment path
 ENV PATH="/app/.venv/bin:$PATH"
-
-# compile bytecode
-# ref: https://docs.astral.sh/uv/guides/integration/docker/#compiling-bytecode
 ENV UV_COMPILE_BYTECODE=1
-
-# uv cache
-# ref: https://docs.astral.sh/uv/guides/integration/docker/#caching
 ENV UV_LINK_MODE=copy
+ENV UV_HTTP_TIMEOUT=300
 
-# install dependencies
-# ref: https://docs.astral.sh/uv/guides/integration/docker/#intermediate-layers
+# Copy dependency files early for caching
+COPY ./pyproject.toml ./uv.lock /app/
+
+# Install dependencies (initial sync without project install)
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --frozen --no-install-project
 
-ENV PYTHONPATH=/app
-
-COPY ./pyproject.toml ./uv.lock /app/
-
+# Copy remaining source files
 COPY ./unigate /app/unigate
-
+COPY ./fast_api_servers /app/fast_api_servers
+COPY ./university_stub /app/university_stub
 COPY ./alembic_unigate /app/alembic_unigate
-
 COPY ./alembic_auth /app/alembic_auth
-
+COPY ./alembic_stub /app/alembic_stub
 COPY ./seeders /app/seeders
 
-# sync the project
-# ref: https://docs.astral.sh/uv/guides/integration/docker/#intermediate-layers
+# Final sync (with project install)
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync
 
-CMD ["fastapi", "run", "--reload", "unigate/main.py"]
+# Start FastAPI server
+# CMD ["fastapi", "run", "--reload", "unigate/main.py"]
+CMD ["fastapi", "run", "--reload", "fast_api_servers/main.py"]
+

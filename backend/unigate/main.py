@@ -70,7 +70,7 @@ app.include_router(course.router, prefix="/courses")
 app.include_router(professor.router, prefix="/professors")
 app.include_router(feedback_response.router)
 
-start_scheduler()
+# start_scheduler()
 
 if __name__ == "__main__":
     import uvicorn

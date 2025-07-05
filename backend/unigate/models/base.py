@@ -17,6 +17,8 @@ class DBAuthBase(SQLModel, registry=registry()):
 class DBUnigateBase(SQLModel, registry=registry()):
     pass
 
+class DBUniBase(SQLModel, registry=registry()):
+    pass
 
 class UUIDBase(SQLModel):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)

@@ -1,3 +1,4 @@
+
 services:
   postgres-unigate:
     container_name: postgres-unigate
@@ -9,41 +10,74 @@ services:
       - POSTGRES_DB=${POSTGRES_DB?Variable not set}
       - POSTGRES_USER=${POSTGRES_USER?Variable not set}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
+      - UNIGATE_DB=${UNIGATE_DB?Variable not set}       # <-- ADD THIS
+      - AUTH_DB=${AUTH_DB?Variable not set}   
+      - UNIVERSITY_DB=${UNIVERSITY_DB?Variable not set}
+
     volumes:
-      - ./postgres/create-databases.sh:/docker-entrypoint-initdb.d/create-databases.sh
+      - ./db/init-scripts/create-databases.sh:/docker-entrypoint-initdb.d/create-databases.sh
       - pgdata:/var/lib/postgresql/data/pgdata
+      
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 10s
       retries: 5
       start_period: 10s
-    network_mode: host
+    ports:
+      - "5434:5432"      # <-- ADD THIS
     restart: unless-stopped
+
 
   pgadmin-unigate:
     container_name: pgadmin-unigate
     image: dpage/pgadmin4:8.13
-    entrypoint:
-      - /custom-entrypoint.sh
     env_file:
-      - .env
+    - .env
     environment:
-      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL?Variable not set}
-      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD?Variable not set}
-      - PGADMIN_CONFIG_SERVER_MODE=False
-      - PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED=False
-      - PGADMIN_SERVER_JSON_FILE=/tmp/servers.json
+    - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL?Variable not set}
+
+    - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD?Variable not set}
+    - PGADMIN_CONFIG_SERVER_MODE=False
+    - PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED=False
+    - PGADMIN_SERVER_JSON_FILE=/pgadmin4/servers.json     # <-- ADD THIS LINE
     volumes:
       - ./pgadmin/entrypoint.sh:/custom-entrypoint.sh
       - pgadmin_data:/var/lib/pgadmin:rw
+    ports:
+    - "5050:80"
     depends_on:
       postgres-unigate:
         condition: service_healthy
-        restart: true
-        required: true
-    network_mode: host
     restart: unless-stopped
+    
+    
+
+  # pgadmin-unigate:
+  #   container_name: pgadmin-unigate
+  #   image: dpage/pgadmin4:8.13
+  #   env_file:
+  #   - .env
+  #   environment:
+  #   - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL?Variable not set}
+
+  #   - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD?Variable not set}
+  #   - PGADMIN_CONFIG_SERVER_MODE=False
+  #   - PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED=False
+  #   - PGADMIN_SERVER_JSON_FILE=/pgadmin4/servers.json     # <-- ADD THIS LINE
+  #   volumes:
+  #     - ./pgadmin/entrypoint.sh:/custom-entrypoint.sh
+  #     - pgadmin_data:/var/lib/pgadmin:rw
+  #   ports:
+  #   - "5050:80"
+  #   depends_on:
+  #     - postgres-unigate
+
+        
+  #   restart: unless-stopped
+
+
+
 
   minio-unigate:
     container_name: minio-unigate
@@ -60,7 +94,9 @@ services:
       timeout: 10s
       retries: 5
       start_period: 10s
-    network_mode: host
+    ports:
+      - "9000:9000"      # <-- MINIO main server
+      - "9001:9001"      # <-- MINIO console
     restart: unless-stopped
 
   mc-unigate:
@@ -73,16 +109,11 @@ services:
       mc anonymous set download minio/${MINIO_BUCKET} || true;
       tail -f /dev/null;"
     environment:
-      - MINIO_URL$=${MINIO_URL?Variable not set}
+      - MINIO_URL=${MINIO_URL?Variable not set}
       - MINIO_BUCKET=${MINIO_BUCKET?Variable not set}
       - MINIO_ROOT_USER=${MINIO_ROOT_USER?Variable not set}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD?Variable not set}
-    depends_on:
-      minio-unigate:
-        condition: service_healthy
-        restart: true
-        required: true
-    network_mode: host
+    
     restart: unless-stopped
 
   backend-unigate:
@@ -90,10 +121,6 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    develop:
-      watch:
-        - path: ./backend/pyproject.toml
-          action: rebuild
     env_file:
       - .env
     environment:
@@ -104,6 +131,7 @@ services:
       - POSTGRES_PORT=5432
       - UNIGATE_DB=${UNIGATE_DB?Variable not set}
       - AUTH_DB=${AUTH_DB?Variable not set}
+      - UNIVERSITY_DB=${UNIVERSITY_DB?Variable not set}
       - MODE=test
       - JWT_SECRET=${JWT_SECRET?Variable not set}
       - SENDGRID_API_KEY=${SENDGRID_API_KEY?Variable not set}
@@ -112,14 +140,10 @@ services:
       - ./backend/unigate:/app/unigate
       - ./backend/alembic_unigate:/app/alembic_unigate
       - ./backend/alembic_auth:/app/alembic_auth
+      - ./backend/alembic_stub:/app/alembic_stub
       - ./backend/seeders:/app/seeders
-      - ./backend/tests:/app/tests
-    depends_on:
-      postgres-unigate:
-        condition: service_healthy
-        restart: true
-        required: true
-    network_mode: host
+    ports:
+      - "8000:8000"      # <-- ADD THIS
     restart: unless-stopped
 
   frontend-unigate:
@@ -127,19 +151,17 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    develop:
-      watch:
-        - path: ./frontend/package.json
-          action: rebuild
     env_file:
       - .env
     environment:
       - NUXT_PUBLIC_BASE_URL=${NUXT_PUBLIC_BASE_URL?Variable not set}
       - NUXT_PUBLIC_MINIO_URL=${NUXT_PUBLIC_MINIO_URL?Variable not set}
-    volumes:
-      - ./frontend:/app
-    network_mode: host
+    ports:
+      - "3000:3000"    # Expose Nuxt3 server
+    depends_on:
+      - backend-unigate
     restart: unless-stopped
+
 
 volumes:
   pgdata:

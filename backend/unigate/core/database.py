@@ -11,17 +11,20 @@ from sqlmodel import (
 # Import models to register them
 from unigate import models  # makes sure model classes are loaded
 
-from unigate.models.base import DBUnigateBase, DBAuthBase  # <-- IMPORTANT: use the custom registry
+from unigate.models.base import DBUnigateBase, DBAuthBase, DBUniBase  # <-- IMPORTANT: use the custom registry
 from unigate.core.config import settings
 
 # Create the database engines
 engine = create_engine(str(settings.UNIGATE_DB_URI))
 auth_engine = create_engine(str(settings.AUTH_DB_URI))
+uniStub_engine = create_engine(str(settings.UNISTUB_DB_URI))
+
 
 # Use the correct metadata registry
 def init_db() -> None:
     DBUnigateBase.metadata.create_all(engine)
     DBAuthBase.metadata.create_all(auth_engine)
+    DBUniBase.metadata.create_all(uniStub_engine)
 
 # Dependency-injected sessions
 def get_session() -> Generator[Session, None, None]:

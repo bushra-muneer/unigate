@@ -17,5 +17,4 @@ class ExamResult(DBUnigateBase, UUIDBase, SQLModel, table=True):
     course_name: str = Field(nullable=False)
     exam_date: datetime.date = Field(nullable=False)
     passed: bool = Field(default=False)
-
     student: "Student" = Relationship(back_populates="exam_results")

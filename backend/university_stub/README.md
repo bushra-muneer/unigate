@@ -1,22 +1,26 @@
-+21-0
 # University API Stub
 
-This minimal FastAPI application emulates the university system so that the backend can fetch
-student and course data without relying on the real service.
+This service simulates the university backend used by `unigate`.
+Data is stored in a PostgreSQL database instead of being generated on the fly.
+Set the `UNIVERSITY_DB` environment variable alongside the other
+PostgreSQL settings used by `unigate`.
 
 ## Running the stub
+## Usage
 
-From the `backend/university_stub` directory run:
+1. Seed the database (only required the first time):
+   ```bash
+   python -m university_stub.seed_data
+   ```
+2. Start the stub:
+   ```bash
+   uvicorn university_stub.main:app --reload --port 8001
+   ```
 
-```bash
-uvicorn main:app --reload --port 8001
-```
+## Endpoints
 
-The stub exposes the following endpoints:
-
-<!-- - `GET /students/{number}` — return basic student information.
-- `GET /courses` — list all courses.
-- `GET /courses/{name}` — details for a specific course. -->
-- `GET /exams/{course}/{date}` — enrolled and passed students for an exam date.
-
-The daa returned is static and only intended for testing purposes.
+- `GET /students/{number}` – return a single student.
+- `GET /courses` – list all courses.
+- `GET /courses/{name}` – details for a specific course.
+- `POST /exam-results/query` – get exam results for a course and date.
+- `GET /exams/{course}/{date}` – same as above, for compatibility.

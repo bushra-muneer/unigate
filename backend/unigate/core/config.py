@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str
     UNIGATE_DB: str = "unigate"
     AUTH_DB: str = "auth"
+    UNISTUB_DB: str = "unigate_uni"
     SENDGRID_API_KEY: str
     JWT_SECRET: str
     JWT_EXPIRATION_SECONDS: int = 60 * 60 * 24  # 1 day
@@ -64,6 +65,18 @@ class Settings(BaseSettings):
             host=self.POSTGRES_HOST,
             port=self.POSTGRES_PORT,
             path=self.AUTH_DB,
+        )
+    
+    @computed_field  # type: ignore
+    @property
+    def UNISTUB_DB_URI(self) -> PostgresDsn:  # noqa: N802
+        return PostgresDsn.build(
+            scheme="postgresql+psycopg",
+            username=self.POSTGRES_USER,
+            password=self.POSTGRES_PASSWORD,
+            host=self.POSTGRES_HOST,
+            port=self.POSTGRES_PORT,
+            path=self.UNISTUB_DB,
         )
 
 
