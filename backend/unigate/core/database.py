@@ -35,8 +35,14 @@ def get_auth_session() -> Generator[Session, None, None]:
     with Session(auth_engine) as session:
         yield session
 
+def get_unistub_session() -> Generator[Session, None, None]:
+    """Return a session bound to the University stub database."""
+    with Session(uniStub_engine) as session:
+        yield session
+
 SessionDep = Annotated[Session, Depends(get_session)]
 AuthSessionDep = Annotated[Session, Depends(get_auth_session)]
+UniStubSessionDep = Annotated[Session, Depends(get_unistub_session)]
 
 
 if __name__ == "__main__":
