@@ -84,7 +84,6 @@ class Exam(DBUniBase, ExamBase, SQLModel, table=True):
 
     course: "Course" = Relationship(back_populates="exams")
 
-    # ✅ Do NOT define .results relationship — exam_results table has no exam_id
 
 
 class ExamResult(DBUniBase, UUIDBase, SQLModel, table=True):
@@ -93,8 +92,8 @@ class ExamResult(DBUniBase, UUIDBase, SQLModel, table=True):
     student_id: uuid.UUID = Field(foreign_key="students.id", nullable=False)
     course_name: str = Field(nullable=False)
     exam_date: datetime.date = Field(nullable=False)
+    grades_registered_date: datetime.date | None = Field(default=None)
     passed: bool = Field(default=False)
 
     student: "Student" = Relationship(back_populates="exam_results")
 
-    # ✅ Do NOT define exam: "Exam" relationship — no exam_id in the DB

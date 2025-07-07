@@ -43,7 +43,8 @@ def upgrade() -> None:
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("student_id", sa.Uuid(), nullable=False),
         sa.Column("course_name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.Column("exam_date", sa.Date(), nullable=False),
+        sa.Column("exam_date", sa.Date(), nullable=False),  # Written exam date
+        sa.Column("grades_registered_date", sa.Date(), nullable=True),
         sa.Column("passed", sa.Boolean(), nullable=False, server_default="false"),
         sa.ForeignKeyConstraint(["student_id"], ["students.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
