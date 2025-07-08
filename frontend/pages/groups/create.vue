@@ -61,8 +61,8 @@
       <!-- Exam Date Dropdown -->
       <div>
         <ExamDateDropdown
-          :examDates="selectedCourseExamDates"
-          v-model:selectedDate="examDate"
+          :dates="selectedCourseExamDates"
+          v-model="examDate"
           :disabled="selectedCourseExamDates.length === 0"
         />
       </div>

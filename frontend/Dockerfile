@@ -2,13 +2,17 @@ FROM node:23.4-bookworm-slim
 
 WORKDIR /app
 
-# Install pnpm directly to avoid Corepack issues
+# Install pnpm
 RUN npm install -g pnpm
 
-COPY ./ /app/
+# Copy only package files first (for layer caching)
+COPY package.json pnpm-lock.yaml ./
 
-# Optional: speed up installs with a cache mount
-RUN --mount=type=cache,id=pnpm,target=/root/.pnpm-store pnpm install --frozen-lockfile
+# Install deps
+RUN pnpm install
 
-CMD ["pnpm", "run", "dev"]
+# Now copy the rest of the code
+COPY . .
 
+# Start dev server
+CMD ["pnpm", "dev"]

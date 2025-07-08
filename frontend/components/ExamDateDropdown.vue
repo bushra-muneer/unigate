@@ -2,13 +2,13 @@
 import { ref, watch, defineProps, defineEmits } from "vue";
 
 const props = defineProps({
-  examDates: {
+  dates: {
     type: Array as () => string[],
     required: true,
   },
-  selectedDate: {
+  modelValue: {
     type: String,
-    default: "",
+    default: '',
   },
   disabled: {
     type: Boolean,
@@ -16,14 +16,14 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["update:selectedDate"]);
+const emit = defineEmits(["update:modelValue"]);
 
 // Local state for selected date
-const localSelectedDate = ref(props.selectedDate);
+const localSelectedDate = ref(props.modelValue);
 
 // Watch for prop changes and update local state
 watch(
-  () => props.selectedDate,
+  () => props.modelValue,
   (newVal) => {
     localSelectedDate.value = newVal;
   },
@@ -31,7 +31,7 @@ watch(
 
 // Emit selected date when it changes
 watch(localSelectedDate, (newVal) => {
-  emit("update:selectedDate", newVal);
+  emit("update:modelValue", newVal);
 });
 </script>
 
@@ -46,11 +46,9 @@ watch(localSelectedDate, (newVal) => {
       class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500"
       :disabled="disabled"
     >
-      <!-- Allow the user to reset the selection -->
-      <option id="data_0" value="">Select Exam Date</option>
       <option
-        :id="'data_' + (index + 1)"
-        v-for="(date, index) in examDates"
+        v-for="(date, index) in dates"
+        :id="'data_' + index"
         :key="date"
         :value="date"
       >
