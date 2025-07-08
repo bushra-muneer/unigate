@@ -25,28 +25,24 @@ docker-down:
     docker compose down -v
 
 reset-database:
+    docker compose exec postgres-unigate psql -U $POSTGRES_USER -d $POSTGRES_DB -c "DO \$\$ BEGIN EXECUTE 'DROP SCHEMA public CASCADE'; EXECUTE 'CREATE SCHEMA public'; END \$\$;"
     docker compose exec postgres-unigate psql -U $POSTGRES_USER -d $UNIGATE_DB -c "DO \$\$ BEGIN EXECUTE 'DROP SCHEMA public CASCADE'; EXECUTE 'CREATE SCHEMA public'; END \$\$;"
     docker compose exec postgres-unigate psql -U $POSTGRES_USER -d $AUTH_DB -c "DO \$\$ BEGIN EXECUTE 'DROP SCHEMA public CASCADE'; EXECUTE 'CREATE SCHEMA public'; END \$\$;"
-    docker compose exec postgres-unigate psql -U $POSTGRES_USER -d $UNIVERSITY_DB -c "DO \$\$ BEGIN EXECUTE 'DROP SCHEMA public CASCADE'; EXECUTE 'CREATE SCHEMA public'; END \$\$;"
-    
+
 init-database-docker-real: reset-database
     docker compose exec backend-unigate sh -c "cd alembic_unigate && alembic upgrade head"
     docker compose exec backend-unigate sh -c "cd alembic_auth && alembic upgrade head"
-    docker compose exec backend-unigate sh -c "cd alembic_stub && alembic upgrade head"
     docker compose exec backend-unigate sh -c "python3 seeders/real.py"
 
 init-database-docker-base: reset-database
     docker compose exec backend-unigate sh -c "cd alembic_unigate && alembic upgrade head"
     docker compose exec backend-unigate sh -c "cd alembic_auth && alembic upgrade head"
-    docker compose exec backend-unigate sh -c "cd alembic_stub && alembic upgrade head"
     docker compose exec backend-unigate sh -c "python3 seeders/base.py"
 
 
 init-database: reset-database
     cd backend/alembic_unigate && ../../{{ backend_venv }}/alembic upgrade head
     cd backend/alembic_auth && ../../{{ backend_venv }}/alembic upgrade head
-    cd backend/alembic_stub && ../../{{ backend_venv }}/alembic upgrade head
-    
 
 reset-minio:
     docker compose exec mc-unigate sh -c "mc rb minio/unigate --force"
@@ -66,12 +62,8 @@ seed-base:
 backend-deps:
     cd backend && uv sync
 
-# backend-dev: backend-deps
-#     {{ backend_venv }}/fastapi dev backend/unigate/main.py
-#     {{ backend_venv }}/fastapi dev backend/university_stub/main.py
-
 backend-dev: backend-deps
-    {{ backend_venv }}/fastapi dev backend/fast_api_servers/main.py
+    {{ backend_venv }}/fastapi dev backend/unigate/main.py
 
 backend-python FILE *ARGS: backend-deps
     {{ backend_python }} backend/{{ FILE }} {{ ARGS }}
