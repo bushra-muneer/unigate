@@ -27,7 +27,7 @@ export function useAuth() {
     formData.append("username", payload.username);
     formData.append("password", payload.password);
 
-    const response = await useApiFetch("/auth/login", {
+    const response = await useApiFetch("/unigate/auth/login", {
       method: "post",
       body: formData, // now sending multipart/form-data
     });

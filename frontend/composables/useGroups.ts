@@ -331,7 +331,7 @@ export function useGroups() {
       // await ensureAuthenticated();
       isError.value = false;
       isLoading.value = true;
-      const response = await useApiFetch("/professors/courses", {
+      const response = await useApiFetch("/unigate/professors/courses", {
         method: "GET",
       });
       return response;
@@ -348,7 +348,7 @@ async function getCoursesWithGroups() {
   try {
     isError.value = false;
     isLoading.value = true;
-    const response = await useApiFetch("/professors/courses-with-groups", {
+    const response = await useApiFetch("/unigate/professors/courses-with-groups", {
   method: "GET",
 });
     return response;
