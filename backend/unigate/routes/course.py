@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
-
+import datetime
 from unigate import crud
 from unigate.core.database import AuthSessionDep, SessionDep
 from unigate.models import Course, Group
@@ -120,8 +120,22 @@ def check_active_course(
 def get_group_distribution(
     session: SessionDep,
     course_name: str,
+    exam_date: str | None = None,
 ) -> CourseGroupDistributionResponse:
-    groups = crud.group.get_groups_course(session=session, course_name=course_name)
+    #groups = crud.group.get_groups_course(session=session, course_name=course_name)
+    parsed_date = None
+    if exam_date is not None:
+        try:
+            parsed_date = datetime.datetime.strptime(exam_date, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Invalid date format. Use YYYY-MM-DD.",
+            )
+
+    groups = crud.group.get_groups_course(
+        session=session, course_name=course_name, exam_date=parsed_date
+    )
     groups_info = [
         GroupDistributionInfo(
             group_name=group.name,
@@ -244,14 +258,26 @@ def get_all_course_names(auth_session: AuthSessionDep) -> list[str]:
     response_model=dict[int, dict[str, int]],
 )
 def get_yearly_stats(
-    session: SessionDep, course_name: str
+    #session: SessionDep, course_name: str
+    session: SessionDep, course_name: str, exam_date: str | None = None
 ) -> dict[int, dict[str, int]]:
     """
-    Fetch yearly group creation and total members statistics for a specific course.
+    Fetch yearly group creation and total members statistics for a course.
+    Can be optionally filtered by exam date.
     """
+    parsed_date = None
+    if exam_date is not None:
+        try:
+            parsed_date = datetime.datetime.strptime(exam_date, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Invalid date format. Use YYYY-MM-DD.",
+            )
+
     try:
         return crud.course.get_yearly_group_stats(
-            session=session, course_name=course_name
+           session=session, course_name=course_name, exam_date=parsed_date
         )
     except Exception as e:
         raise HTTPException(

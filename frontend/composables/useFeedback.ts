@@ -15,7 +15,7 @@ export function useFeedback() {
     // Эта функция просто берет ГОТОВЫЙ объект payload и отправляет его целиком.
     // Она больше не пытается его пересобирать.
     try {
-      await useApiFetch('/feedback/response', {
+      await useApiFetch('/unigate/feedback/response', {
         method: 'POST',
         body: payload, // Отправляем весь объект целиком
       });

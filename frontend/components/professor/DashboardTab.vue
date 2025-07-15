@@ -8,7 +8,7 @@ import { useGroups } from '@/composables/useGroups';
 
 const SELECTED_COURSE_KEY = 'unigate_selected_course';
 const { getProfessorsCourses, getGroupCreationDistribution, getYearlyStats } = useGroups();
-const courses = ref<Array<{ id: string|number, name: string, exams: { date: string }[] }>>([]);
+const courses = ref<Array<{ id: string | number, name: string, exams: { date: string }[] }>>([]);
 const isLoading = ref(true);
 const errorMessage = ref('');
 
@@ -81,13 +81,22 @@ watch([selectedCourseId, groupCreationExamDate], async () => {
   groupCreationChartLoading.value = true;
   try {
     const courseName = selectedCourse.value.name;
-    const data = await getGroupCreationDistribution(courseName) as { groups_info?: any[] };
-    const groupsInfo = (data && Array.isArray(data.groups_info)) ? data.groups_info : [];
-    // Filter by exam date (string match)
-    const filtered = groupsInfo.filter((item: any) =>
-      groupCreationExamDate.value === 'All' || item.exam_date === groupCreationExamDate.value
-    );
-    // Aggregate by creation_date (YYYY-MM-DD)
+    //const data = await getGroupCreationDistribution(courseName) as { groups_info?: any[] };
+   const examDate =
+      groupCreationExamDate.value === 'All'
+        ? undefined
+        : groupCreationExamDate.value;
+    const data = (await getGroupCreationDistribution(courseName, examDate)) as {
+      groups_info?: any[];
+    };
+    const groupsInfo = (data && Array.isArray(data.groups_info))
+      ? data.groups_info
+      : [];
+    const filtered = groupsInfo.filter(
+      (item: any) =>
+        groupCreationExamDate.value === 'All' ||
+        item.exam_date === groupCreationExamDate.value,
+    ); // Aggregate by creation_date (YYYY-MM-DD)
     const dateMap: Record<string, number> = {};
     filtered.forEach((item: any) => {
       if (!item.creation_date) return;
@@ -112,9 +121,12 @@ watch([selectedCourseId, yearlyEnrollmentExamDate], async () => {
   yearlyEnrollmentTableLoading.value = true;
   try {
     const courseName = selectedCourse.value.name;
-    const data = await getYearlyStats(courseName);
+    //const data = await getYearlyStats(courseName);
+const examDate = yearlyEnrollmentExamDate.value === 'All' ? undefined : yearlyEnrollmentExamDate.value;
+    const data = await getYearlyStats(courseName, examDate);
     const yearlyStatsArr = data && typeof data === 'object' ? Object.entries(data).map(([year, stats]: [string, any]) => ({ year, ...stats })) : [];
-    yearlyEnrollmentTableData.value = yearlyStatsArr.filter((item: any) => yearlyEnrollmentExamDate.value === 'All' || item.exam_date === yearlyEnrollmentExamDate.value);
+    // yearlyEnrollmentTableData.value = yearlyStatsArr.filter((item: any) => yearlyEnrollmentExamDate.value === 'All' || item.exam_date === yearlyEnrollmentExamDate.value);
+  yearlyEnrollmentTableData.value = yearlyStatsArr;
   } catch (e) {
     yearlyEnrollmentTableData.value = [];
   } finally {
@@ -135,11 +147,8 @@ watch([selectedCourseId, yearlyEnrollmentExamDate], async () => {
         <div class="flex justify-between items-center mb-8">
           <div class="w-80">
             <label for="courseDropdown" class="block mb-2 text-sm font-medium text-gray-700">Course Name</label>
-            <select
-              id="courseDropdown"
-              v-model="selectedCourseId"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500"
-            >
+            <select id="courseDropdown" v-model="selectedCourseId"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500">
               <option v-for="course in courses" :key="course.id" :value="String(course.id)">
                 {{ course.name }}
               </option>
@@ -151,36 +160,22 @@ watch([selectedCourseId, yearlyEnrollmentExamDate], async () => {
           <div class="flex items-center justify-between mb-2">
             <h2 class="text-2xl font-bold">Group Creation Over Time</h2>
             <div class="w-64">
-              <ExamDateDropdown
-                :dates="groupCreationExamDates"
-                v-model="groupCreationExamDate"
-              />
+              <ExamDateDropdown :dates="groupCreationExamDates" v-model="groupCreationExamDate" />
             </div>
           </div>
-          <GroupCreationChart
-            :courseId="selectedCourseId"
-            :examDate="groupCreationExamDate"
-            :data="groupCreationChartData"
-            :isLoading="groupCreationChartLoading"
-          />
+          <GroupCreationChart :courseId="selectedCourseId" :examDate="groupCreationExamDate"
+            :data="groupCreationChartData" :isLoading="groupCreationChartLoading" />
         </div>
         <!-- Yearly Enrollment Table Widget with Exam Date Filter -->
         <div class="mb-2">
           <div class="flex items-center justify-between mb-2">
             <h2 class="text-2xl font-bold">Yearly Group Enrollment and Participation</h2>
             <div class="w-64">
-              <ExamDateDropdown
-                :dates="yearlyEnrollmentExamDates"
-                v-model="yearlyEnrollmentExamDate"
-              />
+              <ExamDateDropdown :dates="yearlyEnrollmentExamDates" v-model="yearlyEnrollmentExamDate" />
             </div>
           </div>
-          <YearlyEnrollmentTable
-            :courseId="selectedCourseId"
-            :examDate="yearlyEnrollmentExamDate"
-            :data="yearlyEnrollmentTableData"
-            :isLoading="yearlyEnrollmentTableLoading"
-          />
+          <YearlyEnrollmentTable :courseId="selectedCourseId" :examDate="yearlyEnrollmentExamDate"
+            :data="yearlyEnrollmentTableData" :isLoading="yearlyEnrollmentTableLoading" />
         </div>
       </div>
     </div>
