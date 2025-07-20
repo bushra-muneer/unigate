@@ -23,7 +23,7 @@ class TestData:
 
 
 class Urls:
-    BASE_URL = "http://localhost:3000"
+    BASE_URL = "http://localhost:3000/unigate"
     GROUP_PAGE = f"{BASE_URL}/groups"
     SEE_MY_GROUP = f"{GROUP_PAGE}/see-my-group"
     CREATE_GROUP_PAGE = f"{GROUP_PAGE}/create"

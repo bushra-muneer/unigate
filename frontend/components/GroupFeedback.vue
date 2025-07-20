@@ -147,7 +147,7 @@ onMounted(async () => {
 
   try {
     const { data: existingResponses } = await useApiFetch(
-      `/feedback/responses?student_id=${currentStudent.value.id}&group_id=${groupId}`
+      `/unigate/feedback/responses?student_id=${currentStudent.value.id}&group_id=${groupId}`
     )
 
     if (existingResponses.value && existingResponses.value.length > 0) {

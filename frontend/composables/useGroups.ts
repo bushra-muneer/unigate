@@ -34,7 +34,7 @@ export function useGroups() {
       await ensureAuthenticated();
       isError.value = false;
       isLoading.value = true;
-      const response = await useApiFetch("/groups", {
+      const response = await useApiFetch("/unigate/groups", {
         method: "GET",
       });
       groups.value = response;
@@ -53,7 +53,7 @@ export function useGroups() {
       isError.value = false;
       isLoading.value = true;
       const response = await useApiFetch(
-        `/courses/get_group_number?course_name=${encodeURIComponent(courseName)}`,
+        `/unigate/courses/get_group_number?course_name=${encodeURIComponent(courseName)}`,
         {
           method: "GET",
         },
@@ -72,7 +72,7 @@ export function useGroups() {
       isError.value = false;
       isLoading.value = true;
       const response = await useApiFetch(
-        `/courses/${encodeURIComponent(courseName)}/average_members`,
+        `/unigate/courses/${encodeURIComponent(courseName)}/average_members`,
         { method: "GET" },
       );
       return response;
@@ -91,7 +91,7 @@ export function useGroups() {
       const queryParams = new URLSearchParams({
         exam_date: examDate,
       }).toString();
-      const url = `/courses/${encodeURIComponent(courseName)}/active?${queryParams}`;
+      const url = `/unigate/courses/${encodeURIComponent(courseName)}/active?${queryParams}`;
       const response = await useApiFetch(url, {
         method: "GET",
       });
@@ -104,12 +104,17 @@ export function useGroups() {
     }
   }
 
-  async function getGroupCreationDistribution(courseName: string) {
+  // async function getGroupCreationDistribution(courseName: string) {
+  async function getGroupCreationDistribution(courseName: string, examDate?: string) {
     try {
       isError.value = false;
       isLoading.value = true;
+      const query = examDate
+        ? `?${new URLSearchParams({ exam_date: examDate }).toString()}`
+        : "";
       const response = await useApiFetch(
-        `/courses/${encodeURIComponent(courseName)}/distribution`,
+        // `/unigate/courses/${encodeURIComponent(courseName)}/distribution`,
+          `/unigate/courses/${encodeURIComponent(courseName)}/distribution${query}`,
         {
           method: "GET",
         },
@@ -139,7 +144,7 @@ export function useGroups() {
         ),
       ).toString();
 
-      const response = await useApiFetch(`/groups/search?${queryString}`, {
+      const response = await useApiFetch(`/unigate/groups/search?${queryString}`, {
         method: "GET",
       });
 
@@ -159,7 +164,7 @@ export function useGroups() {
       await ensureAuthenticated();
       isError.value = false;
       isLoading.value = true;
-      const response = await useApiFetch(`/groups/${groupId}`, {
+      const response = await useApiFetch(`/unigate/groups/${groupId}`, {
         method: "GET",
       });
       return response;
@@ -176,7 +181,7 @@ export function useGroups() {
       await ensureAuthenticated();
       isError.value = false;
       isLoading.value = true;
-      const response = await useApiFetch("/groups", {
+      const response = await useApiFetch("/unigate/groups", {
         method: "POST",
         body: groupData,
       });
@@ -198,7 +203,7 @@ export function useGroups() {
 
       isError.value = false;
       isLoading.value = true;
-      const response = await useApiFetch(`/groups/${groupId}/join`, {
+      const response = await useApiFetch(`/unigate/groups/${groupId}/join`, {
         method: "POST",
         body: {
           student_id: currentStudent.value.id,
@@ -217,7 +222,7 @@ export function useGroups() {
     try {
       isError.value = false;
       isLoading.value = true;
-      const response = await useApiFetch(`/groups/${groupId}/leave`, {
+      const response = await useApiFetch(`/unigate/groups/${groupId}/leave`, {
         method: "POST",
       });
       return response;
@@ -233,7 +238,7 @@ export function useGroups() {
       await ensureAuthenticated();
       isError.value = false;
       isLoading.value = true;
-      const response = await useApiFetch(`/groups/${groupId}/students`, {
+      const response = await useApiFetch(`/unigate/groups/${groupId}/students`, {
         method: "GET",
       });
       return response;
@@ -249,7 +254,7 @@ export function useGroups() {
       await ensureAuthenticated();
       isError.value = false;
       isLoading.value = true;
-      const response = await useApiFetch(`/groups/${groupId}/requests`, {
+      const response = await useApiFetch(`/unigate/groups/${groupId}/requests`, {
         method: "GET",
       });
       return response;
@@ -271,7 +276,7 @@ export function useGroups() {
       isError.value = false;
       isLoading.value = true;
       const response = await useApiFetch(
-        `/groups/${groupId}/requests/${requestId}/${action}`,
+        `/unigate/groups/${groupId}/requests/${requestId}/${action}`,
         {
           method: "POST",
         },
@@ -294,7 +299,7 @@ export function useGroups() {
       isError.value = false;
       isLoading.value = true;
       const response = await useApiFetch(
-        `/groups/${groupId}/students/${studentId}/${action}`,
+        `/unigate/groups/${groupId}/students/${studentId}/${action}`,
         {
           method: "POST",
         },
@@ -313,7 +318,7 @@ export function useGroups() {
       await ensureAuthenticated();
       isError.value = false;
       isLoading.value = true;
-      const response = await useApiFetch("/courses", {
+      const response = await useApiFetch("/unigate/courses", {
         method: "GET",
       });
       return response;
@@ -331,7 +336,7 @@ export function useGroups() {
       // await ensureAuthenticated();
       isError.value = false;
       isLoading.value = true;
-      const response = await useApiFetch("/professors/courses", {
+      const response = await useApiFetch("/unigate/professors/courses", {
         method: "GET",
       });
       return response;
@@ -348,7 +353,7 @@ async function getCoursesWithGroups() {
   try {
     isError.value = false;
     isLoading.value = true;
-    const response = await useApiFetch("/professors/courses-with-groups", {
+    const response = await useApiFetch("/unigate/professors/courses-with-groups", {
   method: "GET",
 });
     return response;
@@ -361,12 +366,17 @@ async function getCoursesWithGroups() {
 }
 
 
-  async function getYearlyStats(courseName: string) {
+  async function getYearlyStats(courseName: string, examDate?: string) {
     try {
       isError.value = false;
       isLoading.value = true;
+      const query = examDate
+        ? `?${new URLSearchParams({ exam_date: examDate }).toString()}`
+        : "";
+
       const response = await useApiFetch(
-        `/courses/${encodeURIComponent(courseName)}/yearly_stats`,
+        //`/unigate/courses/${encodeURIComponent(courseName)}/yearly_stats`,
+          `/unigate/courses/${encodeURIComponent(courseName)}/yearly_stats${query}`,
         {
           method: "GET",
         },
@@ -384,7 +394,7 @@ async function getCoursesWithGroups() {
     try {
       isError.value = false;
       isLoading.value = true;
-      const response = await useApiFetch(`/groups/${groupId}/students`);
+      const response = await useApiFetch(`/unigate/groups/${groupId}/students`);
       if (!response || typeof response !== 'object') return 0;
 
       const students = Array.isArray((response as any).students) ? (response as any).students : [];

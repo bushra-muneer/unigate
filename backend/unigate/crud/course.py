@@ -36,36 +36,52 @@ class CRUDCourse(CRUDBase[Course, CourseCreate, Course]):
         return session.exec(select(self.model.name))
 
     def get_yearly_group_stats(
-        self, session: Session, course_name: str
+       # self, session: Session, course_name: str
+        self, session: Session, course_name: str, exam_date: datetime.date  | None = None
     ) -> dict[int, dict[str, int]]:
-        """
-        Get yearly group stats for a specific course.
-        Includes totalGroups and totalMembers per year.
-        """
-        statement = (
-            select(
-                func.extract("year", Group.date).label("year"),
-                func.count(Group.id).label("totalGroups"),  # Total number of groups
-                func.count(Join.student_id).label(
-                    "totalMembers"
-                ),  # Total member occurrences
-            )
-            .join(Join, Join.group_id == Group.id)  # Join groups with joins table
-            .where(Group.course_name == course_name)  # Filter by course name
-            .group_by("year")  # Group by year
-            .order_by("year")  # Order by year
+        # """
+        # Get yearly group stats for a specific course.
+        # Includes totalGroups and totalMembers per year.
+        # """
+        # statement = (
+        #     select(
+        #         func.extract("year", Group.date).label("year"),
+        #         func.count(Group.id).label("totalGroups"),  # Total number of groups
+        #         func.count(Join.student_id).label(
+        #             "totalMembers"
+        #         ),  # Total member occurrences
+        #     )
+        #     .join(Join, Join.group_id == Group.id)  # Join groups with joins table
+        #     .where(Group.course_name == course_name)  # Filter by course name
+        #     .group_by("year")  # Group by year
+        #     .order_by("year")  # Order by year
+
+        """Return yearly group stats for a course, optionally filtered by exam date."""
+
+        statement = select(
+            func.extract("year", Group.date).label("year"),
+            func.count(Group.id).label("totalGroups"),
+            func.count(Join.student_id).label("totalMembers"),
+        ).join(Join, Join.group_id == Group.id).where(
+            Group.course_name == course_name
         )
 
+        if exam_date:
+            statement = statement.where(Group.exam_date == exam_date)
+
+        statement = statement.group_by("year").order_by("year")
+        
         results = session.exec(statement).all()
 
-        yearly_stats = {
+        # yearly_stats = {
+        return {
             int(row.year): {
                 "totalGroups": row.totalGroups,
                 "totalMembers": row.totalMembers,
             }
             for row in results
         }
-        return yearly_stats
+        #return yearly_stats
 
 
 course = CRUDCourse(Course)

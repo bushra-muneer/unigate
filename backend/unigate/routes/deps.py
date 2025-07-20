@@ -20,7 +20,7 @@ from unigate.models.group import Group
 from unigate.schemas.token import TokenPayload
 from unigate.utils.auth import get_user
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/unigate/auth/login")
 
 TokenDep = Annotated[str, Depends(oauth2_scheme)]
 

@@ -481,7 +481,7 @@ const askToJoinGroup = async () => {
 const undoJoinRequest = async () => {
   try {
     // Call the backend to delete the join request
-    await useApiFetch(`/groups/${groupId}/requests/undo`, {
+    await useApiFetch(`/unigate/groups/${groupId}/requests/undo`, {
       method: "DELETE",
     });
 

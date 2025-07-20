@@ -131,7 +131,6 @@ professors = [
     ]
 
 groups = [
-   
    GroupCreate(
         name="Test Public Group",
         description="This is a test group",
@@ -156,6 +155,42 @@ groups = [
         category="Test",
         type=GroupType.PRIVATE,
         course_name="Test Course",
+        date=datetime(2025, 1, 1, tzinfo=pytz.utc),
+        exam_date=datetime(2025, 1, 1, tzinfo=pytz.utc),
+    ),
+     GroupCreate(
+        name="Test Private Group",
+        description="This is a test group",
+        category="Test",
+        type=GroupType.PRIVATE,
+        course_name="Capstone",
+        date=datetime(2025, 1, 1, tzinfo=pytz.utc),
+        exam_date=datetime(2025, 1, 1, tzinfo=pytz.utc),
+    ),
+     GroupCreate(
+        name="Test Private Group",
+        description="This is a test group",
+        category="Test",
+        type=GroupType.PRIVATE,
+        course_name="Distributed Systems",
+        date=datetime(2025, 1, 1, tzinfo=pytz.utc),
+        exam_date=datetime(2025, 1, 1, tzinfo=pytz.utc),
+    ),
+      GroupCreate(
+        name="Test Private Group",
+        description="This is a test group",
+        category="Test",
+        type=GroupType.PUBLIC,
+        course_name="Capstone",
+        date=datetime(2025, 1, 1, tzinfo=pytz.utc),
+        exam_date=datetime(2025, 1, 1, tzinfo=pytz.utc),
+    ),
+     GroupCreate(
+        name="Test Private Group",
+        description="This is a test group",
+        category="Test",
+        type=GroupType.PUBLIC,
+        course_name="Distributed Systems",
         date=datetime(2025, 1, 1, tzinfo=pytz.utc),
         exam_date=datetime(2025, 1, 1, tzinfo=pytz.utc),
     ),
@@ -238,6 +273,7 @@ def seed_unigate() -> None:
                     "name": f"Test {student.number} {group.type.value}",
                     "course_name": group.course_name,
                     "exam_date": group.exam_date,
+                    "date": group.date
                 },
                 session=session,
             )

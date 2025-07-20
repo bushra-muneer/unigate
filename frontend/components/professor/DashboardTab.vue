@@ -1,232 +1,182 @@
 <script setup lang="ts">
-import CourseCard from '@/components/CourseCard.vue';
-import CourseSearchBox from '@/components/CourseSearchBox.vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import ExamDateDropdown from '@/components/ExamDateDropdown.vue';
 import GroupCreationChart from '@/components/GroupCreationChart.vue';
+import YearlyEnrollmentTable from '@/components/YearlyEnrollmentTable.vue';
 import LoadingIndicator from '@/components/LoadingIndicator.vue';
 import { useGroups } from '@/composables/useGroups';
-import { computed, onMounted, ref, watch } from 'vue';
 
-const {
-  getProfessorsCourses,
-  getGroupCount,
-  getAverageMembers,
-  getActiveGroupCount,
-  getGroupCreationDistribution,
-  getYearlyStats,
-} = useGroups();
-
-const course = ref('');
-const examDate = ref('');
+const SELECTED_COURSE_KEY = 'unigate_selected_course';
+const { getProfessorsCourses, getGroupCreationDistribution, getYearlyStats } = useGroups();
+const courses = ref<Array<{ id: string | number, name: string, exams: { date: string }[] }>>([]);
 const isLoading = ref(true);
 const errorMessage = ref('');
-const courses = ref<any[]>([]);
-const selectedCourseExamDates = ref<string[]>([]);
-const groupCounts = ref<Record<string, number>>({});
-const averageMembers = ref<Record<string, number>>({});
-const activeGroupsCounts = ref<Record<string, Record<string, number>>>({});
-const studentNames = ref<string[]>([]);
-const groupCreationData = ref<{ date: string; count: number }[]>([]);
-const yearlyStats = ref<Record<number, { totalGroups: number; totalMembers: number }>>({});
 
-// Watch course changes to update exam dates
-watch(course, (newCourseName) => {
-  const matchedCourse = courses.value.find(
-    (c) => c.name.toLowerCase() === newCourseName.toLowerCase()
-  );
-  selectedCourseExamDates.value = matchedCourse?.exams.map((e: any) => e.date) || [];
-  examDate.value = '';
+// Course selection with localStorage persistence
+const selectedCourseId = ref('');
+const selectedCourse = computed(() => courses.value.find(c => String(c.id) === String(selectedCourseId.value)));
+
+// Per-widget exam date state
+const groupCreationExamDate = ref('All');
+const yearlyEnrollmentExamDate = ref('All');
+
+// Reset exam dates when course changes
+watch(selectedCourseId, () => {
+  groupCreationExamDate.value = 'All';
+  yearlyEnrollmentExamDate.value = 'All';
 });
 
-// Fetch functions
+// Fetch professor's courses from the API
 const fetchProfessorsCourses = async () => {
   try {
     const response = await getProfessorsCourses();
-    courses.value = response.map((course: any, index: number) => ({
-      id: index,
+    courses.value = (response as any).map((course: any) => ({
+      id: course.id ?? course.name,
       name: course.name,
       exams: course.exams,
     }));
-    await fetchGroupCounts();
-    await fetchAverageMembers();
-    // await fetchNumberOfActiveGroups();
+    initializeSelectedCourse();
   } catch (error: any) {
-    console.error('Error fetching courses:', error);
-    errorMessage.value = error.response?.status === 403
-      ? 'Access to this page is blocked. You must be authenticated.'
-      : 'Error fetching courses. Please try again later.';
+    errorMessage.value = 'Error fetching courses. Please try again later.';
   } finally {
     isLoading.value = false;
   }
 };
 
-const fetchGroupCounts = async () => {
-  for (const course of courses.value) {
-    try {
-      const response = await getGroupCount(course.name);
-      groupCounts.value[course.name] = response.count;
-    } catch {
-      groupCounts.value[course.name] = 0;
-    }
+function initializeSelectedCourse() {
+  if (typeof window === 'undefined') return;
+  const saved = localStorage.getItem(SELECTED_COURSE_KEY);
+  const sortedCourses = [...courses.value].sort((a, b) => a.name.localeCompare(b.name));
+  if (saved && courses.value.some(c => String(c.id) === saved)) {
+    selectedCourseId.value = saved;
+  } else if (sortedCourses.length) {
+    selectedCourseId.value = String(sortedCourses[0].id);
   }
-};
+}
 
-const fetchAverageMembers = async () => {
-  for (const course of courses.value) {
-    try {
-      const response = await getAverageMembers(course.name);
-      averageMembers.value[course.name] = response.avg;
-    } catch {
-      averageMembers.value[course.name] = 0;
-    }
+// Persist course selection
+watch(selectedCourseId, (val) => {
+  if (val && typeof window !== 'undefined') {
+    localStorage.setItem(SELECTED_COURSE_KEY, String(val));
   }
-};
-
-// const fetchNumberOfActiveGroups = async () => {
-//   for (const course of courses.value) {
-//     activeGroupsCounts.value[course.name] = {};
-//     for (const exam of course.exams) {
-//       try {
-//         const response = await getActiveGroupCount(course.name, exam.date);
-//         activeGroupsCounts.value[course.name][exam.date] = response.groups.filter(
-//           (g: any) => g.students.length > 1
-//         ).length;
-//         if (course.name === course.value && exam.date === examDate.value) {
-//           studentNames.value = response.student_names;
-//         }
-//       } catch {
-//         activeGroupsCounts.value[course.name][exam.date] = 0;
-//       }
-//     }
-//   }
-// };
-
-const fetchGroupCreationData = async (courseName: string) => {
-  try {
-    const response = await getGroupCreationDistribution(courseName);
-    const creationCounts: Record<string, number> = {};
-    response.groups_info.forEach((group: any) => {
-      const date = group.creation_date.split('T')[0];
-      creationCounts[date] = (creationCounts[date] || 0) + 1;
-    });
-    groupCreationData.value = Object.entries(creationCounts).map(([date, count]) => ({
-      date,
-      count,
-    }));
-  } catch (error) {
-    console.error('Error fetching group creation data:', error);
-  }
-};
-
-const fetchYearlyStats = async () => {
-  try {
-    const response = await getYearlyStats(course.value);
-    yearlyStats.value = response;
-  } catch (error) {
-    console.error('Error fetching yearly stats:', error);
-  }
-};
-
-// Watch course + date to fetch student names
-watch([course, examDate], async ([newCourse, newExamDate]) => {
-  if (newCourse && newExamDate) {
-    try {
-      const response = await getActiveGroupCount(newCourse, newExamDate);
-      studentNames.value = response.student_names;
-    } catch {
-      studentNames.value = [];
-    }
-  }
-});
-
-const filteredCourses = computed(() =>
-  courses.value.filter((c) => c.name.toLowerCase() === course.value.toLowerCase())
-);
-
-const currentActiveGroupCount = computed(() => {
-  if (!course.value || !examDate.value) return 0;
-  return activeGroupsCounts.value[course.value]?.[examDate.value] || 0;
 });
 
 onMounted(fetchProfessorsCourses);
+
+const groupCreationExamDates = computed(() => {
+  if (selectedCourse.value && selectedCourse.value.exams) {
+    const dates = selectedCourse.value.exams.map((e: { date: string }) => e.date);
+    const uniqueDates = Array.from(new Set(dates));
+    return ['All', ...uniqueDates];
+  }
+  return ['All'];
+});
+const yearlyEnrollmentExamDates = groupCreationExamDates;
+
+// --- Patch GroupCreationChart and YearlyEnrollmentTable to use real API ---
+const groupCreationChartData = ref<any[]>([]);
+const groupCreationChartLoading = ref(false);
+watch([selectedCourseId, groupCreationExamDate], async () => {
+  if (!selectedCourse.value) return;
+  groupCreationChartLoading.value = true;
+  try {
+    const courseName = selectedCourse.value.name;
+    //const data = await getGroupCreationDistribution(courseName) as { groups_info?: any[] };
+   const examDate =
+      groupCreationExamDate.value === 'All'
+        ? undefined
+        : groupCreationExamDate.value;
+    const data = (await getGroupCreationDistribution(courseName, examDate)) as {
+      groups_info?: any[];
+    };
+    const groupsInfo = (data && Array.isArray(data.groups_info))
+      ? data.groups_info
+      : [];
+    const filtered = groupsInfo.filter(
+      (item: any) =>
+        groupCreationExamDate.value === 'All' ||
+        item.exam_date === groupCreationExamDate.value,
+    ); // Aggregate by creation_date (YYYY-MM-DD)
+    const dateMap: Record<string, number> = {};
+    filtered.forEach((item: any) => {
+      if (!item.creation_date) return;
+      const dateStr = item.creation_date.split('T')[0]; // "YYYY-MM-DD"
+      dateMap[dateStr] = (dateMap[dateStr] || 0) + 1;
+    });
+    groupCreationChartData.value = Object.entries(dateMap).map(([date, count]) => ({
+      creation_date: date,
+      count,
+    }));
+  } catch (e) {
+    groupCreationChartData.value = [];
+  } finally {
+    groupCreationChartLoading.value = false;
+  }
+}, { immediate: true });
+
+const yearlyEnrollmentTableData = ref<any[]>([]);
+const yearlyEnrollmentTableLoading = ref(false);
+watch([selectedCourseId, yearlyEnrollmentExamDate], async () => {
+  if (!selectedCourse.value) return;
+  yearlyEnrollmentTableLoading.value = true;
+  try {
+    const courseName = selectedCourse.value.name;
+    //const data = await getYearlyStats(courseName);
+const examDate = yearlyEnrollmentExamDate.value === 'All' ? undefined : yearlyEnrollmentExamDate.value;
+    const data = await getYearlyStats(courseName, examDate);
+    const yearlyStatsArr = data && typeof data === 'object' ? Object.entries(data).map(([year, stats]: [string, any]) => ({ year, ...stats })) : [];
+    // yearlyEnrollmentTableData.value = yearlyStatsArr.filter((item: any) => yearlyEnrollmentExamDate.value === 'All' || item.exam_date === yearlyEnrollmentExamDate.value);
+  yearlyEnrollmentTableData.value = yearlyStatsArr;
+  } catch (e) {
+    yearlyEnrollmentTableData.value = [];
+  } finally {
+    yearlyEnrollmentTableLoading.value = false;
+  }
+}, { immediate: true });
 </script>
 
 <template>
   <div>
     <LoadingIndicator v-if="isLoading" />
-    <div v-else-if="errorMessage" class="text-center text-red-600">
+    <div v-else-if="errorMessage" class="text-center text-red-500 py-8">
       {{ errorMessage }}
     </div>
-    <div v-else>
-      <div class="mb-6">
-        <CourseSearchBox
-          :items="courses"
-          placeholder="Enter course name"
-          v-model="course"
-          @select="async (selected) => {
-            course = selected.name;
-            examDate.value = '';
-            selectedCourseExamDates.value = selected.exams.map((e: any) => e.date);
-            await fetchGroupCreationData(course);
-            await fetchYearlyStats();
-          }"
-        />
-      </div>
-
-      <div class="mb-6">
-        <ExamDateDropdown
-          :examDates="selectedCourseExamDates"
-          v-model:selectedDate="examDate"
-          :disabled="selectedCourseExamDates.length === 0"
-        />
-      </div>
-
-      <div v-if="filteredCourses.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <CourseCard
-          v-for="c in filteredCourses"
-          :key="c.id"
-          :course="c"
-          :groupCount="groupCounts[c.name] || 0"
-          :avgMembers="averageMembers[c.name] || 0"
-          :activeGroupCount="currentActiveGroupCount"
-        />
-      </div>
-      <div v-else class="text-center text-gray-400 mt-8">
-        Select a course to view details
-      </div>
-
-<!--<div v-if="studentNames.length" class="mt-8">
-        <h2 class="text-xl font-semibold mb-2">Enrolled Students</h2>
-        <ul class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-          <li v-for="name in studentNames" :key="name" class="bg-white shadow rounded p-2">
-            {{ name }}
-          </li>
-        </ul>
-      </div>-->
-
-      <div v-if="groupCreationData.length" class="mt-8">
-        <h2 class="text-xl font-semibold mb-2">Group Creation Over Time</h2>
-        <GroupCreationChart :data="groupCreationData" />
-      </div>
-
-      <div v-if="Object.keys(yearlyStats).length" class="mt-8">
-        <h2 class="text-xl font-semibold mb-2">Yearly Enrollment</h2>
-        <table class="w-full table-auto border border-gray-200">
-          <thead>
-            <tr>
-              <th class="border px-4 py-2">Year</th>
-              <th class="border px-4 py-2">Total Groups</th>
-              <th class="border px-4 py-2">Total Members</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(stats, year) in yearlyStats" :key="year">
-              <td class="border px-4 py-2">{{ year }}</td>
-              <td class="border px-4 py-2">{{ stats.totalGroups }}</td>
-              <td class="border px-4 py-2">{{ stats.totalMembers }}</td>
-            </tr>
-          </tbody>
-        </table>
+    <div v-else class="flex flex-col items-center min-h-[80vh] bg-gray-100 py-6">
+      <div class="container mx-auto max-w-5xl bg-white shadow-lg rounded-lg p-8 overflow-y-auto">
+        <!-- Course Dropdown at the top left -->
+        <div class="flex justify-between items-center mb-8">
+          <div class="w-80">
+            <label for="courseDropdown" class="block mb-2 text-sm font-medium text-gray-700">Course Name</label>
+            <select id="courseDropdown" v-model="selectedCourseId"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500">
+              <option v-for="course in courses" :key="course.id" :value="String(course.id)">
+                {{ course.name }}
+              </option>
+            </select>
+          </div>
+        </div>
+        <!-- Group Creation Chart Widget with Exam Date Filter -->
+        <div class="mb-12">
+          <div class="flex items-center justify-between mb-2">
+            <h2 class="text-2xl font-bold">Group Creation Over Time</h2>
+            <div class="w-64">
+              <ExamDateDropdown :dates="groupCreationExamDates" v-model="groupCreationExamDate" />
+            </div>
+          </div>
+          <GroupCreationChart :courseId="selectedCourseId" :examDate="groupCreationExamDate"
+            :data="groupCreationChartData" :isLoading="groupCreationChartLoading" />
+        </div>
+        <!-- Yearly Enrollment Table Widget with Exam Date Filter -->
+        <div class="mb-2">
+          <div class="flex items-center justify-between mb-2">
+            <h2 class="text-2xl font-bold">Yearly Group Enrollment and Participation</h2>
+            <div class="w-64">
+              <ExamDateDropdown :dates="yearlyEnrollmentExamDates" v-model="yearlyEnrollmentExamDate" />
+            </div>
+          </div>
+          <YearlyEnrollmentTable :courseId="selectedCourseId" :examDate="yearlyEnrollmentExamDate"
+            :data="yearlyEnrollmentTableData" :isLoading="yearlyEnrollmentTableLoading" />
+        </div>
       </div>
     </div>
   </div>

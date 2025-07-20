@@ -153,8 +153,17 @@ class CRUDGroup(CRUDBase[Group, GroupCreate, Group]):
 
         return groups
 
-    def get_groups_course(self, *, course_name: str, session: Session) -> list[Group]:
+    #def get_groups_course(self, *, course_name: str, session: Session) -> list[Group]:
+    def get_groups_course(
+        self,
+        *,
+        course_name: str,
+        session: Session,
+        exam_date: datetime.date | None = None,
+    ) -> list[Group]:
         statement = select(self.model).where(self.model.course_name == course_name)
+        if exam_date:
+            statement = statement.where(self.model.exam_date == exam_date)
         result = session.exec(statement)
         return result.all()  # type: ignore
 

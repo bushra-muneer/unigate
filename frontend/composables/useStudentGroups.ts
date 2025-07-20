@@ -9,7 +9,7 @@ export function useStudentGroups() {
     try {
       isError.value = false;
       isLoading.value = true;
-      const response = await useApiFetch("/students/groups", {
+      const response = await useApiFetch("/unigate/students/groups", {
         method: "GET",
       });
       const data = response as { groups: any[] };

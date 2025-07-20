@@ -34,7 +34,7 @@ export function useCourses() {
       // await ensureAuthenticated();
       isError.value = false;
       isLoading.value = true;
-      const response = await useApiFetch("/courses/all_stats", {
+      const response = await useApiFetch("/unigate/courses/all_stats", {
         method: "GET",
       });
       return response;
