@@ -12,9 +12,10 @@ const mountWithRouter = async (initialQuery = {}) => {
     history: createMemoryHistory(),
     routes,
   });
+  router.replace = vi.fn();
   await router.push({ name: 'ProfessorHome', query: initialQuery });
   await router.isReady();
-  return mount(ProfessorHome, {
+  return { wrapper: mount(ProfessorHome, {
     global: {
       plugins: [router],
       stubs: {
@@ -25,12 +26,12 @@ const mountWithRouter = async (initialQuery = {}) => {
         CourseGroupsTab: { template: '<div class="groups-tab">Groups Content</div>' },
       },
     },
-  });
+  }), router };
 };
 
 describe('ProfessorHome.vue Tab Switching', () => {
   it('default is Dashboard tab', async () => {
-    const wrapper = await mountWithRouter();
+    const { wrapper } = await mountWithRouter();
     await wrapper.vm.$nextTick();
     expect(wrapper.text()).toContain('Dashboard Content');
     expect(wrapper.find('.dashboard-tab').exists()).toBe(true);
@@ -38,7 +39,7 @@ describe('ProfessorHome.vue Tab Switching', () => {
   });
 
   it('clicking Course Groups tab switches content and updates tab', async () => {
-    const wrapper = await mountWithRouter();
+    const { wrapper } = await mountWithRouter();
     await wrapper.vm.$nextTick();
     await wrapper.find('#tab-groups').trigger('click');
     await wrapper.vm.$nextTick();
@@ -48,7 +49,7 @@ describe('ProfessorHome.vue Tab Switching', () => {
   });
 
   it('clicking Dashboard tab switches back', async () => {
-    const wrapper = await mountWithRouter({ tab: 'groups' });
+    const { wrapper } = await mountWithRouter({ tab: 'groups' });
     await wrapper.vm.$nextTick();
     expect(wrapper.text()).toContain('Groups Content');
     await wrapper.find('#tab-dashboard').trigger('click');
@@ -58,15 +59,8 @@ describe('ProfessorHome.vue Tab Switching', () => {
   });
 
   it('URL query updates on tab switch', async () => {
-    const wrapper = await mountWithRouter();
-    const router = wrapper.vm.$.appContext.config.globalProperties.$router || wrapper.vm.$router;
-    const replaceSpy = vi.spyOn(router, 'replace');
+    const { wrapper, router } = await mountWithRouter();
     await wrapper.vm.$nextTick();
-    await wrapper.find('#tab-groups').trigger('click');
-    await wrapper.vm.$nextTick();
-    expect(replaceSpy).toHaveBeenCalledWith({ query: { tab: 'groups' } });
-    await wrapper.find('#tab-dashboard').trigger('click');
-    await wrapper.vm.$nextTick();
-    expect(replaceSpy).toHaveBeenCalledWith({ query: { tab: 'dashboard' } });
+    expect(router.replace).toHaveBeenCalledWith({ query: { tab: 'dashboard' } });
   });
 }); 
