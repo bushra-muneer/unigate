@@ -4,6 +4,8 @@ import CourseSearchBox from "@/components/CourseSearchBox.vue";
 import ExamDateDropdown from "@/components/ExamDateDropdown.vue";
 import GroupCreationChart from "@/components/GroupCreationChart.vue";
 import LoadingIndicator from "@/components/LoadingIndicator.vue";
+import HelpfulnessByGroupSizeChart from "@/components/HelpfulnessByGroupSizeChart.vue";
+import { useFeedback } from "@/composables/useFeedback";
 import { useGroups } from "@/composables/useGroups";
 import { computed, onMounted, ref, watch } from "vue";
 
@@ -37,6 +39,14 @@ const errorMessage = ref("");
 const averageMembers = ref<Record<string, number>>({});
 const activeGroupsCounts = ref<Record<string, Record<string, number>>>({});
 const groupCreationData = ref<{ date: string; count: number }[]>([]);
+const helpfulnessStats = ref<
+  {
+    group_size: string;
+    helpful_pct: number;
+    not_helpful_pct: number;
+    not_answered_pct: number;
+  }[]
+>([]);
 const studentNames = ref<string[]>([]);
 const yearlyStats = ref<{
   [key: number]: { totalGroups: number; totalMembers: number };
@@ -86,6 +96,17 @@ const fetchGroupCounts = async () => {
     }
   }
 };
+const fetchHelpfulnessStats = async () => {
+  try {
+    const params = examDate.value ? `?exam_date=${examDate.value}` : "";
+    const res = await fetch(`http://localhost:8000/feedback/helpfulness-distribution${params}`);
+    helpfulnessStats.value = await res.json();
+  } catch (error) {
+    console.error("Ошибка при получении helpfulness статистики:", error);
+    helpfulnessStats.value = [];
+  }
+};
+
 
 //Fetch group average members for each course
 const fetchAverageMembers = async () => {
@@ -147,6 +168,7 @@ const fetchNumberOfActiveGroups = async () => {
 // Add watcher to update student names when course or exam date changes
 watch([course, examDate], async ([newCourse, newExamDate]) => {
   if (newCourse && newExamDate) {
+    // Fetch student names
     try {
       const response = await getActiveGroupCount(newCourse, newExamDate);
       studentNames.value = response.student_names;
@@ -154,10 +176,22 @@ watch([course, examDate], async ([newCourse, newExamDate]) => {
       console.error("Error fetching student names:", error);
       studentNames.value = [];
     }
+
+    // Fetch helpfulness stats
+    try {
+      const feedback = await useFeedback().getHelpfulnessStats(newExamDate);
+      helpfulnessStats.value = feedback;
+    } catch (error) {
+      console.error("Error fetching helpfulness stats:", error);
+      helpfulnessStats.value = [];
+    }
   } else {
     studentNames.value = [];
+    helpfulnessStats.value = [];
   }
 });
+
+
 
 // Process group creation data
 const processGroupCreationData = (groupsInfo: any[]) => {
@@ -389,6 +423,13 @@ onMounted(fetchProfessorsCourses);
               </tr>
             </tbody>
           </table>
+        </div>
+        <div
+          v-if="filteredCourses.length && helpfulnessStats.length > 0"
+          class="mt-8"
+        >
+          <h2 class="text-2xl font-bold mb-6">Helpfulness Rate by Group Size</h2>
+          <HelpfulnessByGroupSizeChart :data="helpfulnessStats" />
         </div>
       </div>
     </div>
