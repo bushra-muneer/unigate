@@ -1,7 +1,6 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 
-// Мокаем useGroups, чтобы не было зависимости от Nuxt useState
 vi.mock('@/composables/useGroups', () => ({
   useGroups: () => ({
     getProfessorsCourses: async () => [
@@ -58,11 +57,9 @@ describe('Dashboard.vue exam date filter', () => {
       },
     });
 
-    // Отключаем лоадер
     wrapper.vm.isLoading = false;
     await wrapper.vm.$nextTick();
 
-    // Выбираем курс
     const input = wrapper.find('input#course_input');
     await input.setValue('Capstone');
     await wrapper.findComponent({ name: 'CourseSearchBox' }).vm.$emit('select', {
@@ -75,24 +72,18 @@ describe('Dashboard.vue exam date filter', () => {
     });
     await wrapper.vm.$nextTick();
 
-    // По умолчанию examDate пустой, виджеты должны показывать все данные (All)
     expect(wrapper.html()).toContain('Capstone');
 
-    // Выбираем конкретную дату
     wrapper.vm.examDate = '2025-06-01';
     await wrapper.vm.$nextTick();
-    // Проверяем, что данные соответствуют только этой дате (например, student_names = ['a', 'b'])
     expect(wrapper.vm.studentNames).toEqual(['a', 'b']);
 
-    // Выбираем другую дату
     wrapper.vm.examDate = '2025-07-01';
     await wrapper.vm.$nextTick();
     expect(wrapper.vm.studentNames).toEqual(['c']);
 
-    // Выбираем дату, для которой нет данных
     wrapper.vm.examDate = '2025-08-01';
     await wrapper.vm.$nextTick();
     expect(wrapper.vm.studentNames).toEqual([]);
-    // Можно проверить, что отображается fallback/empty state (например, текст "No data" или отсутствие виджетов)
   });
 }); 
